@@ -1,0 +1,10 @@
+bin
+obj
+Debug
+Release
+Proj
+build
+docs\html
+.vs
+*.vcxproj.user
+*.DotSettings.user

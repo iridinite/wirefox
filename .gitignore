@@ -1,0 +1,11 @@
+bin
+obj
+Debug
+Release
+Proj
+build
+docs/html
+docs/pcap
+.vs
+*.vcxproj.user
+*.DotSettings.user

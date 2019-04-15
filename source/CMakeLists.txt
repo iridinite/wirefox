@@ -1,0 +1,44 @@
+target_sources(Wirefox
+  PRIVATE
+    BinaryStream.cpp
+	Channel.cpp
+	ChannelBuffer.cpp
+	ChannelBuffer.h
+    CongestionControl.cpp
+    CongestionControl.h
+    CongestionControlWindow.cpp
+    CongestionControlWindow.h
+    DatagramBuilder.cpp
+    DatagramBuilder.h
+    DatagramHeader.cpp
+    DatagramHeader.h
+    Handshaker.cpp
+    Handshaker.h
+    HandshakerThreeWay.cpp
+    HandshakerThreeWay.h
+    PCH.cpp
+    PCH.h
+    Packet.cpp
+    PacketHeader.cpp
+    PacketHeader.h
+    PacketQueue.cpp
+    PacketQueue.h
+    Peer.cpp
+    Peer.h
+	ReceiptTracker.cpp
+	ReceiptTracker.h
+    RemoteAddress.cpp
+    RemoteAddress.h
+    RemotePeer.cpp
+    RemotePeer.h
+    Socket.h
+    SocketUDP.cpp
+    SocketUDP.h
+    WirefoxTime.cpp
+    WirefoxCBindings.cpp
+    WirefoxConfigRefs.h
+)
+target_include_directories(Wirefox
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
