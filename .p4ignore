@@ -4,7 +4,9 @@ Debug
 Release
 Proj
 build
-docs\html
+docs/html
+docs/pcap
+.git
 .vs
 *.vcxproj.user
 *.DotSettings.user

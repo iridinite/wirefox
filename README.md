@@ -2,20 +2,20 @@
 
 Wirefox is a flexible, easy-to-use and no-nonsense networking library.
 
- - Connection-oriented API
- - Message-oriented delivery
- - Peer-to-peer-style architecture, but also supports client-server model
- - Supports IPv4 and IPv6
- - Supports reliable delivery
- - Supports custom channels, to sort and sequence packets
+- Connection-oriented API
+- Message-oriented delivery
+- Peer-to-peer-style architecture, but also supports client-server model
+- Supports IPv4 and IPv6
+- Supports reliable delivery
+- Supports custom channels, to sort and sequence packets
 
 This library is under active development, and probably not ready to be used in production. Regardless, I'd be happy to hear from you if you have any thoughts or concerns.
 
 Planned features:
 
- - Custom packet prioritization
- - Remote procedure calls
- - Encryption
+- Custom packet prioritization
+- Remote procedure calls
+- Encryption
 
 ## Building from source
 
@@ -34,7 +34,9 @@ Use CMake or CMake-GUI, then build with your favorite IDE (such as Visual Studio
 
 Run CMake, then build using your favorite tool.
 ```
-$ cmake ./build
+$ mkdir build
+$ cd build
+$ cmake ../
 $ make
 ```
 
