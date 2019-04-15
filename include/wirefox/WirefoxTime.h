@@ -6,7 +6,7 @@ namespace wirefox {
     typedef uint64_t    Timespan;
 
     /// Represents a single, exact point in time.
-    struct Timestamp {
+    struct WIREFOX_API Timestamp {
         friend class Time;
 
         /// Default constructor.
