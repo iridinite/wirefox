@@ -40,12 +40,10 @@ namespace wirefox {
             asio::ip::udp           GetAsioProtocol() const;
 
             SocketState             m_state;
-            std::string             m_host;
-            unsigned short          m_port;
+            SocketProtocol          m_family;
 
             asio::io_context        m_context;
             asio::ip::udp::socket   m_socket;
-            SocketProtocol          m_family;
 
             uint8_t                 m_readbuf[cfg::PACKETQUEUE_IN_LEN];
             std::atomic_bool        m_reading;

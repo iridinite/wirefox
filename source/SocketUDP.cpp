@@ -4,20 +4,10 @@
 using namespace asio::ip;
 using namespace wirefox::detail;
 
-// Optionally enable locking in the socket class
-// Refer to documentation of WIREFOX_ENABLE_SOCKET_LOCK in WirefoxConfig.h
-#ifdef WIREFOX_ENABLE_SOCKET_LOCK
-    #define WIREFOX_SOCKETUDP_LOCK_GUARD(__mtx_name) WIREFOX_LOCK_GUARD(__mtx_name)
-#else
-    #define WIREFOX_SOCKETUDP_LOCK_GUARD(__mtx_name)
-#endif
-
 SocketUDP::SocketUDP()
     : m_state(SocketState::CLOSED)
-    , m_port(0)
-    , m_context()
-    , m_socket(m_context)
     , m_family()
+    , m_socket(m_context)
     , m_readbuf{}
     , m_reading(false) {}
 
@@ -37,33 +27,27 @@ SocketUDP::~SocketUDP() {
 }
 
 ConnectAttemptResult SocketUDP::Connect(const std::string& host, const unsigned short port, SocketConnectCallback_t callback) {
-    WIREFOX_SOCKETUDP_LOCK_GUARD(m_lock);
-
-    if (!IsOpenAndReady())
+    if (GetState() != SocketState::OPEN || !IsOpenAndReady())
         return ConnectAttemptResult::INVALID_STATE;
 
     // make sure input parameters are not nonsensical
     if (host.empty() || port == 0)
         return ConnectAttemptResult::INVALID_PARAMETER;
-    m_host = host;
-    m_port = port;
 
     // pick the desired IP version
-    // TODO: m_family MUST be set here already!
     const auto protocol = GetAsioProtocol();
 
     // attempt to resolve the given hostname into an endpoint
     udp::endpoint endpoint;
     udp::resolver resolver(m_context);
     try {
-        udp::resolver::iterator it = resolver.resolve(protocol, m_host, std::to_string(m_port));
+        udp::resolver::iterator it = resolver.resolve(protocol, host, std::to_string(port));
         if (it == udp::resolver::iterator() /* end */)
             return ConnectAttemptResult::INVALID_HOSTNAME;
 
         endpoint = *it;
 
-    } catch (const asio::system_error& error) {
-        std::cerr << "ERROR: SocketUDP:Connect: failed to resolve host: " << error.what() << std::endl;
+    } catch (const asio::system_error&) {
         return ConnectAttemptResult::INVALID_HOSTNAME;
     }
 
@@ -73,8 +57,6 @@ ConnectAttemptResult SocketUDP::Connect(const std::string& host, const unsigned 
 
     assert(callback);
     m_context.post(std::bind(callback, false, addr, shared_from_this(), std::string()));
-    //if (callback)
-        //callback(false, addr, shared_from_this(), std::string());
 
     return ConnectAttemptResult::OK;
 }
@@ -89,11 +71,10 @@ void SocketUDP::Unbind() {
     m_socket.shutdown(udp::socket::shutdown_both);
     m_socket.cancel();
     m_socket.close();
+    m_state = SocketState::CLOSED;
 }
 
 bool SocketUDP::Bind(const SocketProtocol family, const unsigned short port) {
-    WIREFOX_SOCKETUDP_LOCK_GUARD(m_lock);
-
     // socket should be inactive and unbound
     if (GetState() != SocketState::CLOSED) return false;
 
@@ -107,19 +88,16 @@ bool SocketUDP::Bind(const SocketProtocol family, const unsigned short port) {
         m_socket.open(protocol);
         m_socket.bind(udp::endpoint(protocol, port));
 
-    } catch (const asio::system_error& ex) {
-        std::cerr << "Error: listening setup failed:" << std::endl;
-        std::cerr << ex.what() << std::endl;
+    } catch (const asio::system_error&) {
         return false;
     }
 
-    m_port = port;
+    m_state = SocketState::OPEN;
+
     return true;
 }
 
 void SocketUDP::BeginWrite(const RemoteAddress& addr, const uint8_t* data, size_t datalen, SocketWriteCallback_t callback) {
-    WIREFOX_SOCKETUDP_LOCK_GUARD(m_lock);
-
     m_socket.async_send_to(asio::buffer(data, datalen),
         addr.endpoint_udp,
         [callback](const asio::error_code& error, size_t bytes_transferred) -> void {
@@ -135,8 +113,6 @@ void SocketUDP::BeginWrite(const RemoteAddress& addr, const uint8_t* data, size_
 }
 
 void SocketUDP::BeginRead(SocketReadCallback_t callback) {
-    WIREFOX_SOCKETUDP_LOCK_GUARD(m_lock);
-
     m_reading.store(true);
     m_socket.async_receive_from(asio::buffer(m_readbuf, cfg::PACKETQUEUE_IN_LEN),
         m_readsender, // will be filled in with the sender address of the incoming datagram
@@ -155,12 +131,10 @@ void SocketUDP::BeginRead(SocketReadCallback_t callback) {
             callback(static_cast<bool>(error), addr, m_readbuf, bytes_transferred);
 
             // automatically and immediately restart the read cycle using the same callback
-            if (!error && IsOpenAndReady()) {
+            if (!error && IsOpenAndReady())
                 BeginRead(callback);
-            } else {
+            else
                 m_reading.store(false);
-                std::cerr << "SocketUDP::BeginRead: warning: detected error or m_socket.is_open() == false; stopping cycle" << std::endl;
-            }
         }
     );
 }
@@ -170,10 +144,10 @@ bool SocketUDP::IsReadPending() const {
 }
 
 void SocketUDP::RunCallbacks() {
-    WIREFOX_SOCKETUDP_LOCK_GUARD(m_lock);
     if (m_context.stopped())
         m_context.restart();
 
+    // run pending callbacks, but in a non-blocking manner (return if none exist)
     m_context.poll();
 }
 
