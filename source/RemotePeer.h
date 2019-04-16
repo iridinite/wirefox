@@ -78,7 +78,7 @@ namespace wirefox {
             /// used for sending messages to unconnected peers.
             bool        IsOutOfBand() const { return id == 0 || handshake == nullptr; }
 
-            // Returns a value indicating whether a graceful disconnect is currently in progress.
+            /// Returns a value indicating whether a graceful disconnect is currently in progress.
             bool        IsDisconnecting() const { return disconnect.load().IsValid(); }
 
             /**
