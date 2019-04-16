@@ -3,23 +3,26 @@ Getting Started
 
 [TOC]
 
-# Compiling from source
+# Building from source
 
-**Requirements:**
+## Requirements
 
-* C++14 compliant compiler
-* CMake 3.9 or higher
+- Operating system support for BSD sockets interface
+  (Windows, Linux, most newer game consoles)
+- A C++14-compliant compiler, or newer
+- CMake 3.9 or higher
 
-**Windows**
+## Windows
 
-Run CMake or CMake-GUI, optionally tweaking settings to your liking, to generate project files.
+Use CMake or CMake-GUI, then build with your favorite IDE (such as Visual Studio).
 
-**Linux**
+## Linux
 
 Run CMake, then build using your favorite tool.
-
 ```
-$ cmake ./build
+$ mkdir build
+$ cd build
+$ cmake ../
 $ make
 ```
 
