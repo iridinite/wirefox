@@ -8,6 +8,10 @@ Timestamp::operator uint64_t() const noexcept {
     return t;
 }
 
+bool Timestamp::IsValid() const noexcept {
+    return t > 0;
+}
+
 Timestamp Timestamp::operator+(const Timespan& rhs) noexcept {
     t += rhs;
     return *this;

@@ -16,6 +16,8 @@ namespace wirefox {
 
         /// Implicitly converts this Timestamp to its underlying value.
         operator uint64_t() const noexcept;
+        /// Checks whether this Timestamp is set to a value.
+        bool IsValid() const noexcept;
         /// Adds a Timespan to the Timestamp, and returns the new Timestamp.
         Timestamp operator+(const Timespan& rhs) noexcept;
         /// Subtracts a Timespan from the Timestamp, and returns the new Timestamp.
