@@ -20,6 +20,7 @@ RemotePeer::RemotePeer()
     : reserved(false)
     , active(false)
     , pendingWrite(false)
+    , disconnect(0)
     , id(0) {}
 
 bool RemotePeer::IsConnected() const {
@@ -121,6 +122,7 @@ void RemotePeer::Setup(Peer* master, Handshaker::Origin origin) {
 void RemotePeer::Reset() {
     active = false;
     pendingWrite = false;
+    disconnect = 0;
     id = 0;
     addr = RemoteAddress();
     socket = nullptr;

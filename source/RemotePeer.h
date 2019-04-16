@@ -27,6 +27,9 @@ namespace wirefox {
             /// Indicates whether an async write operation on the socket is still pending.
             std::atomic_bool pendingWrite;
 
+            /// Indicates when the disconnect grace period ends. If IsDisconnecting() == false, this value has no meaning.
+            std::atomic<Timestamp> disconnect;
+
             /// The unique ID number of this remote endpoint. May be zero if handshake incomplete.
             PeerID id;
 
@@ -74,6 +77,9 @@ namespace wirefox {
             /// Returns a value indicating whether this socket is never connected to an endpoint, but rather
             /// used for sending messages to unconnected peers.
             bool        IsOutOfBand() const { return id == 0 || handshake == nullptr; }
+
+            // Returns a value indicating whether a graceful disconnect is currently in progress.
+            bool        IsDisconnecting() const { return disconnect.load().IsValid(); }
 
             /**
              * \brief Handle an incoming acknowledgement.

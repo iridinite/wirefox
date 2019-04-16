@@ -38,7 +38,7 @@ namespace wirefox {
 
             ConnectAttemptResult        Connect(const std::string& host, uint16_t port) override;
             bool                        Bind(SocketProtocol family, uint16_t port) override;
-            void                        Disconnect(PeerID who) override;
+            void                        Disconnect(PeerID who, Timespan linger) override;
             void                        DisconnectImmediate(PeerID who) override;
             void                        Stop(Timespan linger) override;
 
@@ -126,10 +126,18 @@ namespace wirefox {
             /**
              * \brief Informs the Peer that a remote has disconnected somehow.
              * 
-             * \param[in]   id          The PeerID of the remote peer that disconnected from us.
+             * \param[in]   remote      The remote peer that disconnected from us.
              * \param[in]   cmd         The PacketCommand of the notification that we will post for the user.
              */
-            void                        OnDisconnect(PeerID id, PacketCommand cmd);
+            void                        OnDisconnect(RemotePeer& remote, PacketCommand cmd);
+
+            /**
+             * \brief Handles a system notification, e.g. a message that isn't meant for the end user.
+             *
+             * \param[in]   remote      The remote peer that sent us a packet.
+             * \param[in]   packet      The message they sent to us.
+             */
+            void                        OnSystemPacket(RemotePeer& remote, std::unique_ptr<Packet> packet);
 
             /**
              * \brief Handles an unconnected message (i.e. LNK flag unset): deals with the contained Packet.

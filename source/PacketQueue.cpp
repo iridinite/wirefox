@@ -28,6 +28,9 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     assert(packet.GetLength() < cfg::PACKET_MAX_LENGTH);
     (void)priority; // TODO
 
+    // if disconnect is in progress, disallow queueing of more packets
+    if (remote->IsDisconnecting()) return 0;
+
     WIREFOX_LOCK_GUARD(remote->lock);
 
     PacketID nextPacketID = remote->congestion->GetNextPacketID();
@@ -130,6 +133,13 @@ void PacketQueue::ThreadWorker() {
                 remote.congestion->Update();
             if (remote.receipt)
                 remote.receipt->Update();
+
+            // disconnection timeout
+            auto timeout = remote.disconnect.load();
+            if (timeout.IsValid() && Time::Elapsed(timeout)) {
+                m_peer->DisconnectImmediate(&remote);
+                return;
+            }
 
             // skip cycle if socket hasn't fully initialized yet
             if (remote.socket == nullptr || !remote.socket->IsOpenAndReady()) continue;
@@ -258,7 +268,13 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
         if (remote->congestion->NotifyReceivedPacket(packetHeader.id) == CongestionControl::RecvState::NEW) {
             // construct an actual Packet instance and get moving with it
             auto packet = Packet::Factory::Create(Packet::FromDatagram(remote->id, inbuffer, packetHeader.length));
-            HandleIncomingPacket(*remote, packetHeader, std::move(packet));
+
+            if (packet->GetCommand() < PacketCommand::USER_PACKET)
+                // don't deliver system packets to user, but handle them immediately
+                m_peer->OnSystemPacket(*remote, std::move(packet));
+            else
+                // user data
+                HandleIncomingPacket(*remote, packetHeader, std::move(packet));
         }
 
         inbuffer.Skip(packetHeader.length);

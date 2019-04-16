@@ -82,13 +82,16 @@ bool Peer::Bind(SocketProtocol family, uint16_t port) {
     return m_masterSocket->Bind(family, port);
 }
 
-void Peer::Disconnect(PeerID who) {
+void Peer::Disconnect(PeerID who, Timespan linger) {
     auto* remote = GetRemoteByID(who);
     if (remote == nullptr) return;
 
-    // TODO: Clean disconnect sequence
-    m_remoteLookup.erase(who);
-    remote->Reset();
+    // send out a request to disconnect
+    Packet request(PacketCommand::DISCONNECT_REQUEST, nullptr, 0);
+    m_queue->EnqueueOutgoing(request, remote, PacketOptions::RELIABLE, PacketPriority::CRITICAL, Channel());
+    
+    // this prevents further packets from being queued
+    remote->disconnect = Time::Now() + linger;
 }
 
 void Peer::DisconnectImmediate(PeerID who) {
@@ -104,8 +107,10 @@ void Peer::DisconnectImmediate(RemotePeer* remote) {
     if (!remote || !remote->handshake) return;
 
     if (remote->handshake->IsDone() && remote->handshake->GetResult() == ConnectResult::OK)
-        // if connection was already established, then if the write fails now, we must've disconnected somehow
-        this->OnDisconnect(remote->id, PacketCommand::NOTIFY_CONNECTION_LOST);
+        // connection was already established, so it was lost now
+        this->OnDisconnect(*remote, remote->IsDisconnecting()
+            ? PacketCommand::NOTIFY_DISCONNECTED
+            : PacketCommand::NOTIFY_CONNECTION_LOST);
     else
         // if handshake was not yet complete, then treat the remote endpoint as unreachable
         remote->handshake->Complete(ConnectResult::CONNECT_FAILED);
@@ -185,14 +190,34 @@ void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
         remote->Reset();
 }
 
-void Peer::OnDisconnect(PeerID id, PacketCommand cmd) {
+void Peer::OnDisconnect(RemotePeer& remote, PacketCommand cmd) {
     // remove from lookup tables
-    m_remoteLookup.erase(id);
+    m_remoteLookup.erase(remote.id);
+
+    // no notification if we're already expecting the disconnect
+    //if (remote.IsDisconnecting()) return;
 
     // post a notification for the local user
     Packet notification(cmd, nullptr, 0);
-    notification.SetSender(id);
+    notification.SetSender(remote.id);
     SendLoopback(notification);
+}
+
+void Peer::OnSystemPacket(RemotePeer& remote, std::unique_ptr<Packet> packet) {
+    switch (packet->GetCommand()) {
+    case PacketCommand::DISCONNECT_REQUEST: {
+        OnDisconnect(remote, PacketCommand::NOTIFY_DISCONNECTED);
+
+        Packet dc_ack(PacketCommand::DISCONNECT_ACK, nullptr, 0);
+        m_queue->EnqueueOutOfBand(dc_ack, remote.addr);
+
+        remote.Reset();
+        break;
+    }
+    default:
+        assert(false && "unexpected system packet received");
+        break;
+    }
 }
 
 void Peer::OnUnconnectedMessage(const RemoteAddress& addr, BinaryStream& instream) {
@@ -228,6 +253,17 @@ void Peer::OnUnconnectedMessage(const RemoteAddress& addr, BinaryStream& instrea
         // if handshake failed, discard this remote endpoint
         if (remote->handshake->IsDone() && remote->handshake->GetResult() != ConnectResult::OK)
             remote->Reset();
+
+        break;
+    }
+    case PacketCommand::DISCONNECT_ACK: {   
+        // disconnect completed on remote end, hence flag_link is unset on this packet
+
+        RemotePeer* remote = GetRemoteByAddress(addr);
+        if (!remote) return;
+
+        // finish the disconnect locally as well
+        DisconnectImmediate(remote);
 
         break;
     }

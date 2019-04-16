@@ -90,8 +90,9 @@ namespace wirefox {
          * notification. After this function returns, the connection may linger while the disconnect completes.
          * 
          * \param[in]   who         The ID number of the peer you wish to kick.
+         * \param[in]   linger      The maximum amount of time to wait for confirmation from the remote peer.
          */
-        virtual void                    Disconnect(PeerID who) = 0;
+        virtual void                    Disconnect(PeerID who, Timespan linger = Time::FromMilliseconds(200)) = 0;
 
         /**
          * \brief Immediately disconnects a remote peer, as if a communication error had occurred.
