@@ -92,9 +92,8 @@ void StartSender(const std::string& filename, const std::string& receiver, uint1
                     auto timeElapsed = std::chrono::steady_clock::now() - timeStart;
                     std::cout << "Sender: All packets delivered; disconnecting." << std::endl;
                     std::cout << "Sender: Time elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeElapsed).count() << " ms" << std::endl;
-
-                    // TODO: Disconnect currently immediately wipes the outbox and can cause some packets to not arrive
-                   // peer->Disconnect(receiverID);
+                    
+                    peer->Disconnect(receiverID);
                     break;
                 }
 

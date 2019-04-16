@@ -52,7 +52,7 @@ int main(int argc, const char** argv) {
     }
 
     // some welcome text
-    std::cout << "---- Wirefox Chat Demo ---" << std::endl;
+    std::cout << "---- Wirefox Chat Demo ----" << std::endl;
     std::cout << "(C) Mika Molenkamp, 2019." << std::endl << std::endl;
 
     if (isClient) {
@@ -61,6 +61,7 @@ int main(int argc, const char** argv) {
         std::cout << "/exit              -  quit the chat client" << std::endl;
         std::cout << "/list              -  if connected, list other connected users" << std::endl;
         std::cout << "/nick <name>       -  if connected, change your nickname" << std::endl;
+        std::cout << "/dc                -  if connected, disconnect from the server" << std::endl;
         std::cout << std::endl;
 
     } else {

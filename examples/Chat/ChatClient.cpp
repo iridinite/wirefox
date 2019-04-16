@@ -68,7 +68,7 @@ void ChatClient::Tick() {
         case wirefox::PacketCommand::NOTIFY_DISCONNECTED: {
             // user left :(
             m_connected = false;
-            std::cout << "Whoops, we disconnected!" << std::endl;
+            std::cout << "Disconnected from server." << std::endl;
             break;
         }
         default: {
@@ -126,7 +126,8 @@ void ChatClient::HandleInput(const std::string& input) {
         Connect(hostname, m_port);
 
     } else if (strcmp(input.c_str(), "/dc") == 0 || strcmp(input.c_str(), "/disconnect") == 0) {
-        std::cout << "Peer::Disconnect not implemented yet..." << std::endl;
+        std::cout << "Disconnecting..." << std::endl;
+        m_peer->Disconnect(m_server);
 
     } else {
         // treat as message
