@@ -162,6 +162,28 @@ ChannelMode Peer::GetChannelModeByIndex(ChannelIndex index) const {
     return m_channels.at(index);
 }
 
+void Peer::GetAllConnectedPeers(std::vector<PeerID>& output) const {
+    for (size_t i = 1 /* skip oob socket */; i < m_remotesMax; i++) {
+        auto& slot = m_remotes[i];
+        if (slot.IsConnected())
+            output.push_back(slot.id);
+    }
+}
+
+bool Peer::GetPingAvailable(PeerID who) const {
+    auto* remote = GetRemoteByID(who);
+    if (!remote) return false;
+
+    return remote->congestion->GetRTTHistoryAvailable();
+}
+
+unsigned Peer::GetPing(PeerID who) const {
+    auto* remote = GetRemoteByID(who);
+    if (!remote) return false;
+
+    return remote->congestion->GetAverageRTT();
+}
+
 void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
     // TODO: IP rate limit check, as countermeasure against SYN flood-style DoS attack
 

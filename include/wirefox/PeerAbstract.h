@@ -165,8 +165,36 @@ namespace wirefox {
          * \brief Returns the ChannelMode that was set by MakeChannel().
          * 
          * \throws std::out_of_range if no channel was registered with the specified index.
+         * \param[in]   index       The ID number of the channel.
          */
         virtual ChannelMode             GetChannelModeByIndex(ChannelIndex index) const = 0;
+
+        /**
+         * \brief Makes a list of all remote peers connected to this Peer.
+         * 
+         * \param[out]  output      A container that will be filled in with PeerIDs of remote peers.
+         */
+        virtual void                    GetAllConnectedPeers(std::vector<PeerID>& output) const = 0;
+
+        /**
+         * \brief Returns a value indicating whether a ping value is currently available.
+         * 
+         * For newly connected peers, likely not enough data is available to reliably calculate ping. In such
+         * a case, this function will return false, and GetPing() may return an incorrect value.
+         * 
+         * \param[in]   who         The PeerID for whom to check ping.
+         */
+        virtual bool                    GetPingAvailable(PeerID who) const = 0;
+
+        /**
+         * \brief Returns the ping of a remote peer, in milliseconds.
+         * 
+         * Ping is the estimated amount of time it takes for a message to travel to the remote peer \p who
+         * and back to the local peer. Generally, the lower, the better.
+         * 
+         * \param[in]   who         The PeerID for whom to check ping.
+         */
+        virtual unsigned                GetPing(PeerID who) const = 0;
 
         /**
          * \brief Returns the maximum number of peers this IPeer can be connected to at once.

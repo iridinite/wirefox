@@ -31,6 +31,8 @@ namespace wirefox {
             size_t          GetTransmissionBudget() const override;
             size_t          GetRetransmissionBudget() const override;
             Timespan        GetRetransmissionRTO(unsigned retries) const override;
+            bool            GetRTTHistoryAvailable() const override;
+            unsigned        GetAverageRTT() const override;
 
             bool            GetNeedsToSendAcks() const override;
             void            MakeAckList(std::vector<DatagramID>& acks, std::vector<DatagramID>& nacks) override;

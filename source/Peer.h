@@ -71,6 +71,9 @@ namespace wirefox {
 
             Channel                     MakeChannel(ChannelMode mode) override;
             ChannelMode                 GetChannelModeByIndex(ChannelIndex index) const override;
+            void                        GetAllConnectedPeers(std::vector<PeerID>& output) const override;
+            bool                        GetPingAvailable(PeerID who) const override;
+            unsigned                    GetPing(PeerID who) const override;
 
             /**
              * \brief Retrieves a RemotePeer using its slot index.

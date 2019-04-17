@@ -74,13 +74,24 @@ Timespan CongestionControlWindow::GetRetransmissionRTO(unsigned retries) const {
     constexpr Timespan baseDelay = Time::FromMilliseconds(cfg::THREAD_SLEEP_PACKETQUEUE_TICK);
 
     // a little measure so a new connection won't have a silly RTT of zero
-    if (m_rttHistory.size() < 2)
+    if (GetRTTHistoryAvailable())
         return baseDelay * 4;
 
     Timespan variance = m_rttMax - m_rttMin;
     Timespan rto = m_rttAvg + (2 * variance) + baseDelay;
 
     return rto * (retries + 1);
+}
+
+bool CongestionControlWindow::GetRTTHistoryAvailable() const {
+    return m_rttHistory.size() >= 2; // a few samples
+}
+
+unsigned CongestionControlWindow::GetAverageRTT() const {
+    auto ms = Time::ToMilliseconds(m_rttAvg);
+    assert(ms >= 0 && "RTT going back in time would be rather impressive");
+
+    return static_cast<unsigned>(ms);
 }
 
 bool CongestionControlWindow::GetNeedsToSendAcks() const {

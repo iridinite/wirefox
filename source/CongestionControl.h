@@ -59,6 +59,12 @@ namespace wirefox {
              */
             virtual Timespan    GetRetransmissionRTO(unsigned retries) const = 0;
 
+            /// Returns a value indicating whether a few entries are saved in the RTT history buffer.
+            virtual bool        GetRTTHistoryAvailable() const = 0;
+
+            /// Returns this connection's average ping in milliseconds.
+            virtual unsigned    GetAverageRTT() const = 0;
+
             /// Returns a value indicating whether the congestion manager wishes to send acks now.
             virtual bool        GetNeedsToSendAcks() const = 0;
 
