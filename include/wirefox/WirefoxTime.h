@@ -63,6 +63,11 @@ namespace wirefox {
         constexpr static Timespan   FromSeconds(int seconds) {
             return std::chrono::duration_cast<precision>(std::chrono::seconds(seconds)).count();
         }
+
+        /// Returns the number of milliseconds represented by a Timespan.
+        constexpr static int        ToMilliseconds(Timespan timespan) {
+            return static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(precision(timespan)).count());
+        }
     };
 
 }
