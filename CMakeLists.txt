@@ -18,6 +18,11 @@ include(${CMAKE_SOURCE_DIR}/cmake/Macros.cmake)
 
 # ------- main project -------
 
+# require C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 set(LIBRARY_NAME "Wirefox")
 add_library(Wirefox "")
 
@@ -25,11 +30,6 @@ add_library(Wirefox "")
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(Wirefox Threads::Threads)
-
-# require C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 # required to ensure asio does not depend on boost
 add_definitions(-DASIO_STANDALONE)

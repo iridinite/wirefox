@@ -15,4 +15,4 @@ include(${CMAKE_SOURCE_DIR}/cmake/CompilerSpecific.cmake)
 
 copy_wirefox_library()
 
-add_test("WirefoxTests" Tests)
+add_test("WirefoxTests" $<TARGET_FILE:Tests>)
