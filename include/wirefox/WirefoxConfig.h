@@ -163,7 +163,7 @@ namespace wirefox {
          * \attention The lock guard is expected to follow RAII principles. That is, the mutex should be locked
          * the moment the guard is constructed, and unlocked when the guard is destructed.
          */
-        #define WIREFOX_LOCK_GUARD(__mtx_name)      std::lock_guard<::wirefox::cfg::LockableMutex> WIREFOX_STRINGIFY(__guard_line, __LINE__)(__mtx_name)
+        #define WIREFOX_LOCK_GUARD(__mtx_name)      ::std::lock_guard<::wirefox::cfg::LockableMutex> WIREFOX_STRINGIFY(__guard_line, __LINE__)(__mtx_name)
 
     }
 
