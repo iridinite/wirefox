@@ -9,18 +9,21 @@
 
 using namespace detail;
 
+static_assert(cfg::THREAD_SLEEP_PACKETQUEUE_TICK > 0, "wirefox::cfg::THREAD_SLEEP_PACKETQUEUE_TICK must be greater than zero");
+
 PacketQueue::PacketQueue(Peer* peer)
     : m_peer(peer)
-    , m_threadAbortSignal(false) {
+    , m_updateThreadAbort(false) {
     // now that the buffers are ready, start up I/O thread
-    m_processThread = std::thread(std::bind(&PacketQueue::ThreadWorker, this));
+    m_updateThread = std::thread(std::bind(&PacketQueue::ThreadWorker, this));
 }
 
 PacketQueue::~PacketQueue() {
     // stop thread
-    m_threadAbortSignal.store(true);
-    if (m_processThread.joinable())
-        m_processThread.join();
+    m_updateThreadAbort.store(true);
+    m_updateNotify.Signal();
+    if (m_updateThread.joinable())
+        m_updateThread.join();
 }
 
 PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, PacketOptions options, PacketPriority priority, const Channel& channel) {
@@ -116,11 +119,7 @@ bool PacketQueue::OutgoingPacket::HasFlag(PacketOptions test) const {
 }
 
 void PacketQueue::ThreadWorker() {
-    while (!m_threadAbortSignal) {
-        // sit a moment and rest
-        static_assert(cfg::THREAD_SLEEP_PACKETQUEUE_TICK > 0, "wirefox::cfg::THREAD_SLEEP_PACKETQUEUE_TICK must be greater than zero");
-        std::this_thread::sleep_for(std::chrono::milliseconds(cfg::THREAD_SLEEP_PACKETQUEUE_TICK));
-
+    while (!m_updateThreadAbort) {
         const size_t remotesMax = m_peer->GetMaximumPeers();
         for (size_t i = 0; i < remotesMax; i++) {
             auto& remote = m_peer->GetRemoteByIndex(i);
@@ -129,10 +128,11 @@ void PacketQueue::ThreadWorker() {
             // give the handshaker the opportunity to resend possibly lost packets
             if (remote.handshake && !remote.handshake->IsDone())
                 remote.handshake->Update();
-            if (remote.congestion)
+            // various periodic updates
+            if (remote.IsConnected()) {
                 remote.congestion->Update();
-            if (remote.receipt)
                 remote.receipt->Update();
+            }
 
             // disconnection timeout
             auto timeout = remote.disconnect.load();
@@ -153,6 +153,9 @@ void PacketQueue::ThreadWorker() {
                 DoWriteCycle(remote);
             }
         }
+
+        // sleep a maximum of x milliseconds, but wake up earlier if requested
+        m_updateNotify.WaitFor(Time::FromMilliseconds(cfg::THREAD_SLEEP_PACKETQUEUE_TICK));
     }
 }
 
@@ -279,6 +282,9 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 
         inbuffer.Skip(packetHeader.length);
     }
+
+    // request an immediate update, so a new read will be scheduled asap
+    m_updateNotify.Signal();
 }
 
 void PacketQueue::HandleIncomingPacket(RemotePeer& remote, const PacketHeader& header, std::unique_ptr<Packet> packet) {

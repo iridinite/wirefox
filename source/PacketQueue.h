@@ -3,6 +3,7 @@
 #include "BinaryStream.h"
 #include "RemoteAddress.h"
 #include "WirefoxTime.h"
+#include "AwaitableEvent.h"
 
 namespace wirefox {
 
@@ -123,8 +124,9 @@ namespace wirefox {
             Inbox               m_inbox;
 
             cfg::LockableMutex  m_lockInbox;
-            std::atomic_bool    m_threadAbortSignal;
-            std::thread         m_processThread;
+            std::atomic_bool    m_updateThreadAbort;
+            std::thread         m_updateThread;
+            AwaitableEvent      m_updateNotify;
         };
 
         /// \endcond
