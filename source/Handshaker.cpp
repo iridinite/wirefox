@@ -8,8 +8,8 @@ static_assert(cfg::CONNECT_RETRY_COUNT >= 1, "CONNECT_RETRY_COUNT must be at lea
 static_assert(cfg::CONNECT_RETRY_DELAY >= 1, "CONNECT_RETRY_DELAY must be at least 1");
 
 Handshaker::Handshaker(PeerID myID, Origin origin)
-    : m_replyHandler(nullptr)
-    , m_myID(myID)
+    : m_myID(myID)
+    , m_replyHandler(nullptr)
     , m_origin(origin)
     , m_result(ConnectResult::IN_PROGRESS)
     , m_lastReply(0)

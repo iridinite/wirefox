@@ -27,6 +27,11 @@ Peer::Peer(Peer&& other) noexcept
     *this = std::move(other);
 }
 
+Peer::~Peer() {
+    // clean shutdown, stop worker thread before deallocating everything
+    m_masterSocket->Unbind();
+}
+
 Peer& Peer::operator=(Peer&& other) noexcept {
     if (this != &other) {
         // steal internal state

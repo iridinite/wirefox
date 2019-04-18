@@ -29,7 +29,7 @@ namespace wirefox {
             /// Move constructor.
             Peer(Peer&&) noexcept;
             /// Destructor.
-            ~Peer() = default;
+            ~Peer();
 
             /// Copy assignment operator.
             Peer& operator=(const Peer&) = delete;
