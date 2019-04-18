@@ -24,9 +24,6 @@ namespace wirefox {
             /// Indicates whether this slot should receive socket callbacks, and should have read/write cycles invoked.
             std::atomic_bool active;
 
-            /// Indicates whether an async write operation on the socket is still pending.
-            std::atomic_bool pendingWrite;
-
             /// Indicates when the disconnect grace period ends. If IsDisconnecting() == false, this value has no meaning.
             std::atomic<Timestamp> disconnect;
 

@@ -9,18 +9,21 @@
 
 using namespace detail;
 
+static_assert(cfg::THREAD_SLEEP_PACKETQUEUE_TICK > 0, "wirefox::cfg::THREAD_SLEEP_PACKETQUEUE_TICK must be greater than zero");
+
 PacketQueue::PacketQueue(Peer* peer)
     : m_peer(peer)
-    , m_threadAbortSignal(false) {
+    , m_updateThreadAbort(false) {
     // now that the buffers are ready, start up I/O thread
-    m_processThread = std::thread(std::bind(&PacketQueue::ThreadWorker, this));
+    m_updateThread = std::thread(std::bind(&PacketQueue::ThreadWorker, this));
 }
 
 PacketQueue::~PacketQueue() {
     // stop thread
-    m_threadAbortSignal.store(true);
-    if (m_processThread.joinable())
-        m_processThread.join();
+    m_updateThreadAbort.store(true);
+    m_updateNotify.Signal();
+    if (m_updateThread.joinable())
+        m_updateThread.join();
 }
 
 PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, PacketOptions options, PacketPriority priority, const Channel& channel) {
@@ -116,11 +119,7 @@ bool PacketQueue::OutgoingPacket::HasFlag(PacketOptions test) const {
 }
 
 void PacketQueue::ThreadWorker() {
-    while (!m_threadAbortSignal) {
-        // sit a moment and rest
-        static_assert(cfg::THREAD_SLEEP_PACKETQUEUE_TICK > 0, "wirefox::cfg::THREAD_SLEEP_PACKETQUEUE_TICK must be greater than zero");
-        std::this_thread::sleep_for(std::chrono::milliseconds(cfg::THREAD_SLEEP_PACKETQUEUE_TICK));
-
+    while (!m_updateThreadAbort) {
         const size_t remotesMax = m_peer->GetMaximumPeers();
         for (size_t i = 0; i < remotesMax; i++) {
             auto& remote = m_peer->GetRemoteByIndex(i);
@@ -129,10 +128,11 @@ void PacketQueue::ThreadWorker() {
             // give the handshaker the opportunity to resend possibly lost packets
             if (remote.handshake && !remote.handshake->IsDone())
                 remote.handshake->Update();
-            if (remote.congestion)
+            // various periodic updates
+            if (remote.IsConnected()) {
                 remote.congestion->Update();
-            if (remote.receipt)
                 remote.receipt->Update();
+            }
 
             // disconnection timeout
             auto timeout = remote.disconnect.load();
@@ -144,15 +144,12 @@ void PacketQueue::ThreadWorker() {
             // skip cycle if socket hasn't fully initialized yet
             if (remote.socket == nullptr || !remote.socket->IsOpenAndReady()) continue;
 
-            // run callbacks on this remote's socket. strictly speaking this is not the most efficient way, as we ping probably the same
-            // socket multiple times (for UDP, all remotes share the same socket), but this keeps it implementation-agnostic (i.e. safe for TCP)
-            remote.socket->RunCallbacks();
-
-            if (remote.active) {
-                DoReadCycle(remote);
-                DoWriteCycle(remote);
-            }
+            DoReadCycle(remote);
+            DoWriteCycle(remote);
         }
+
+        // sleep a maximum of x milliseconds, but wake up earlier if requested
+        m_updateNotify.WaitFor(Time::FromMilliseconds(cfg::THREAD_SLEEP_PACKETQUEUE_TICK));
     }
 }
 
@@ -162,21 +159,20 @@ void PacketQueue::DoReadCycle(RemotePeer& remote) {
     if (remote.socket->IsReadPending()) return;
 
     // dispatch a new read op for this remote
-    remote.socket->BeginRead(std::bind(&PacketQueue::OnReadFinished, this, _1, _2, _3, _4));
+    remote.socket->BeginRead(std::bind(&PacketQueue::OnReadFinished, shared_from_this(), _1, _2, _3, _4));
 }
 
 void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     using namespace std::placeholders;
-    if (remote.pendingWrite) return;
+    if (remote.socket->IsWritePending()) return;
 
     OutgoingDatagram* datagram = remote.GetNextDatagram(m_peer);
     if (!datagram) return;
 
     // dispatch an async write op for this remote
-    remote.pendingWrite = true;
     remote.congestion->NotifySendingBytes(datagram->id, datagram->blob.GetLength());
     remote.socket->BeginWrite(datagram->addr, datagram->blob.GetBuffer(), datagram->blob.GetLength(),
-        std::bind(&PacketQueue::OnWriteFinished, this, &remote, datagram->id, _1, _2));
+        std::bind(&PacketQueue::OnWriteFinished, shared_from_this(), &remote, datagram->id, _1, _2));
 }
 
 void PacketQueue::OnWriteFinished(RemotePeer* remote, DatagramID, bool error, size_t) {
@@ -184,9 +180,6 @@ void PacketQueue::OnWriteFinished(RemotePeer* remote, DatagramID, bool error, si
     //   C2661 'std::tuple<wirefox::detail::PacketQueue *,wirefox::detail::RemotePeer,std::_Ph<1>,std::_Ph<2>>::tuple': no overloaded function takes 4 arguments
     // EDIT: apparently need to use std::ref(), but I don't think directly referencing the temporary in ThreadWorker is a good idea...
     assert(remote);
-
-    // signal to I/O thread that it can pick a new packet and restart writing
-    remote->pendingWrite = false;
 
     if (error)
         m_peer->DisconnectImmediate(remote);
@@ -279,6 +272,9 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 
         inbuffer.Skip(packetHeader.length);
     }
+
+    // request an immediate update, so a new read will be scheduled asap
+    m_updateNotify.Signal();
 }
 
 void PacketQueue::HandleIncomingPacket(RemotePeer& remote, const PacketHeader& header, std::unique_ptr<Packet> packet) {

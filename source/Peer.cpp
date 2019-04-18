@@ -18,7 +18,7 @@ Peer::Peer(size_t maxPeers)
     , m_remotesMax(maxPeers + 1)
     , m_masterSocket(cfg::DefaultSocket::Create())
     , m_remotes(std::unique_ptr<RemotePeer[]>(new RemotePeer[m_remotesMax]))
-    , m_queue(std::make_unique<PacketQueue>(this))
+    , m_queue(std::make_shared<PacketQueue>(this))
     , m_channels{ChannelMode::UNORDERED} {}
 
 Peer::Peer(Peer&& other) noexcept

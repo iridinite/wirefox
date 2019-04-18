@@ -30,13 +30,14 @@ namespace wirefox {
             void                    BeginWrite(const RemoteAddress& addr, const uint8_t* data, size_t datalen, SocketWriteCallback_t callback) override;
             void                    BeginRead(SocketReadCallback_t callback) override;
             bool                    IsReadPending() const override;
-            void                    RunCallbacks() override;
+            bool                    IsWritePending() const override;
 
             SocketState             GetState() const override;
 
             bool                    IsOpenAndReady() const override;
 
         private:
+            void                    ThreadWorker();
             asio::ip::udp           GetAsioProtocol() const;
 
             SocketState             m_state;
@@ -44,9 +45,12 @@ namespace wirefox {
 
             asio::io_context        m_context;
             asio::ip::udp::socket   m_socket;
+            std::thread             m_socketThread;
+            std::atomic_bool        m_socketThreadAbort;
+            std::atomic_bool        m_reading;
+            std::atomic_bool        m_sending;
 
             uint8_t                 m_readbuf[cfg::PACKETQUEUE_IN_LEN];
-            std::atomic_bool        m_reading;
             asio::ip::udp::endpoint m_readsender;
 
 #ifdef WIREFOX_ENABLE_SOCKET_LOCK
