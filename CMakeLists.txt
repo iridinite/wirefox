@@ -47,7 +47,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/CompilerSpecific.cmake)
 add_subdirectory(include)
 add_subdirectory(source)
 
-add_precompiled_header(Wirefox PCH.h FORCEINCLUDE SOURCE_CXX ${CMAKE_SOURCE_DIR}/source/PCH.cpp)
+# can't get pch to work on gcc/clang for now so just leave it I guess
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  add_precompiled_header(Wirefox PCH.h FORCEINCLUDE)
+endif()
 
 # ------- examples -------
 
@@ -58,5 +61,6 @@ if(BUILD_EXAMPLES)
   endif()
 endif()
 if(BUILD_TESTS)
+  enable_testing()
   add_subdirectory(tests)
 endif()
