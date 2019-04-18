@@ -14,3 +14,6 @@ target_link_libraries(${LIBRARY_NAME} PRIVATE Wirefox)
 include(${CMAKE_SOURCE_DIR}/cmake/CompilerSpecific.cmake)
 
 copy_wirefox_library()
+
+enable_testing()
+add_test("WirefoxTests" Tests)

@@ -47,7 +47,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/CompilerSpecific.cmake)
 add_subdirectory(include)
 add_subdirectory(source)
 
-add_precompiled_header(Wirefox PCH.h FORCEINCLUDE)
+add_precompiled_header(Wirefox PCH.h FORCEINCLUDE SOURCE_CXX ${CMAKE_SOURCE_DIR}/source/PCH.cpp)
 
 # ------- examples -------
 
