@@ -1,5 +1,7 @@
 # Wirefox - Networking API
 
+[![Build Status](https://travis-ci.org/iridinite/wirefox.svg?branch=master)](https://travis-ci.org/iridinite/wirefox) [![Build status](https://ci.appveyor.com/api/projects/status/lc448a3ax9ghqbec/branch/master?svg=true)](https://ci.appveyor.com/project/iridinite/wirefox/branch/master)
+
 Wirefox is a flexible, easy-to-use and no-nonsense networking library.
 
 - Connection-oriented API
