@@ -1,0 +1,20 @@
+dist: xenial
+
+language: cpp
+compiler:
+  - gcc
+  - clang
+
+git:
+  depth: 1
+
+install:
+  - mkdir build
+  - cd build
+  - cmake ../ -DWARNINGS_PEDANTIC=1 -DWARNINGS_AS_ERRORS=1 -DCMAKE_BUILD_TYPE=Debug
+  - cd ..
+
+script:
+  - $CXX --version
+  - cd build
+  - make -j 4 -k

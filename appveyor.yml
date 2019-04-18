@@ -1,0 +1,25 @@
+version: '0.1.{build}'
+image: Visual Studio 2017
+
+pull_requests:
+  do_not_increment_build_number: true
+
+configuration:
+- Debug
+- RelWithDebInfo
+
+clone_depth: 1
+
+build:
+  verbosity: minimal
+
+before_build:
+  - mkdir build
+  - cd build
+  - cmake -G "Visual Studio 15 2017 Win64" ..\
+
+build:
+  project: $(APPVEYOR_BUILD_FOLDER)\build\$(APPVEYOR_PROJECT_NAME).sln
+
+test_script:
+  - '%APPVEYOR_BUILD_FOLDER%\build\tests\%CONFIGURATION%\tests.exe'
