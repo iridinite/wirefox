@@ -71,8 +71,8 @@ namespace wirefox {
             std::vector<DatagramID> m_acks;
             std::vector<DatagramID> m_nacks;
             std::map<DatagramID, DatagramInFlight> m_outgoing;
-            std::map<DatagramID, Timestamp> m_datagramHistory;
-            std::map<PacketID, Timestamp> m_packetHistory;
+            std::unordered_map<DatagramID, Timestamp> m_datagramHistory;
+            std::unordered_map<PacketID, Timestamp> m_packetHistory;
         };
 
         /// \endcond

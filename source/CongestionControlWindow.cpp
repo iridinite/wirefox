@@ -27,23 +27,42 @@ void CongestionControlWindow::Update() {
     size_t bytesStillOutgoing = 0;
 #endif
     auto decayTime = m_rttAvg * 16; // somewhat arbitrary long time
-    auto it = m_outgoing.begin();
-    while (it != m_outgoing.end()) {
-        const auto& pif = it->second;
+    auto itr_flight = m_outgoing.begin();
+    while (itr_flight != m_outgoing.end()) {
+        const auto& pif = itr_flight->second;
         if (Time::Elapsed(pif.sent + decayTime)) {
             m_bytesInFlight -= pif.bytes;
-            it = m_outgoing.erase(it);
+            itr_flight = m_outgoing.erase(itr_flight);
         } else {
 #if _DEBUG
             bytesStillOutgoing += pif.bytes;
 #endif
-            ++it;
+            ++itr_flight;
         }
     }
 
 #if _DEBUG
     assert(m_bytesInFlight == bytesStillOutgoing);
 #endif
+
+    // Clean up expired history for both packets and datagrams.
+    // Unfortunately we can't use remove_if with an std::map... so this is more or less the closest, I think.
+
+    // prefer caching this over Elapsed(), because Elapsed() wraps Now(), and getting clock is somewhat expensive
+    auto expire = Time::Now() + Time::FromSeconds(10);
+
+    for (auto itr_datagram = m_datagramHistory.begin(), itend = m_datagramHistory.end(); itr_datagram != itend;) {
+        if (expire >= itr_datagram->second)
+            itr_datagram = m_datagramHistory.erase(itr_datagram);
+        else
+            ++itr_datagram;
+    }
+    for (auto itr_packet = m_packetHistory.begin(), itend = m_packetHistory.end(); itr_packet != itend;) {
+        if (expire >= itr_packet->second)
+            itr_packet = m_packetHistory.erase(itr_packet);
+        else
+            ++itr_packet;
+    }
 }
 
 PacketID CongestionControlWindow::GetNextPacketID() {
@@ -166,25 +185,10 @@ void CongestionControlWindow::NotifyReceivedNakGroup() {
     m_window = cfg::MTU;
 }
 
-bool HasDatagramHistoryExpired(Timestamp created) {
-    return Time::Elapsed(created + Time::FromSeconds(10));
-}
-
 CongestionControl::RecvState CongestionControlWindow::NotifyReceivedDatagram(DatagramID recv, bool isAckDatagram) {
-    // TODO: The m_datagramHistory construct may require optimization. I expect several thousand entries in the list, and an
-    // TODO: O(log n) lookup may be more expensive than required. But std::set<DatagramID> won't work, I also need the Timestamp.
-    // TODO: In any case, the history expiring routine can be moved to Update(), so this method has less work to do.
+    auto it = m_datagramHistory.find(recv);
+    if (it != m_datagramHistory.end()) return RecvState::DUPLICATE;
 
-    for (auto it = m_datagramHistory.begin(), itend = m_datagramHistory.end(); it != itend;) {
-        if (HasDatagramHistoryExpired(it->second))
-            // clean up expired history. unfortunately we can't use remove_if with an std::map...
-            it = m_datagramHistory.erase(it);
-        else if (it->first == recv)
-            // already received this ID a short time ago
-            return RecvState::DUPLICATE;
-        else
-            ++it;
-    }
     m_datagramHistory.emplace(recv, Time::Now());
 
     // if this will be the first new ack we're sending, then this is also immediately the oldest one in the list
@@ -211,16 +215,8 @@ CongestionControl::RecvState CongestionControlWindow::NotifyReceivedDatagram(Dat
 }
 
 CongestionControl::RecvState CongestionControlWindow::NotifyReceivedPacket(PacketID recv) {
-    for (auto it = m_packetHistory.begin(), itend = m_packetHistory.end(); it != itend;) {
-        if (HasDatagramHistoryExpired(it->second))
-            // clean up expired history. unfortunately we can't use remove_if with an std::map...
-            it = m_packetHistory.erase(it);
-        else if (it->first == recv)
-            // already received this ID a short time ago
-            return RecvState::DUPLICATE;
-        else
-            ++it;
-    }
+    auto it = m_packetHistory.find(recv);
+    if (it != m_packetHistory.end()) return RecvState::DUPLICATE;
 
     m_packetHistory.emplace(recv, Time::Now());
     return RecvState::NEW;
