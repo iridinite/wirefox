@@ -8,26 +8,32 @@ compiler:
 git:
   depth: 1
 
-install:
-  # Update CMake to minimum required of 3.13
-  # Politely borrowed from https://github.com/ldionne/hana/blob/master/.travis.yml
-  - |
-    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      CMAKE_URL="https://cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
-      mkdir -p cmake
-      travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-      export PATH=${DEPS_DIR}/cmake/bin:${PATH}
-    else
-      brew install cmake || brew upgrade cmake
-    fi
-  - cmake --version
+install:    
+  # first we create a directory for the CMake binaries
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
+  # we use wget to fetch the cmake binaries
+  - travis_retry wget --no-check-certificate https://cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz
+  # this is optional, but useful:
+  # do a quick md5 check to ensure that the archive we downloaded did not get compromised
+  - echo "8b743ed020503c8e66952e73b92630c2 *cmake-3.13.4-Linux-x86_64.tar.gz" > cmake_md5.txt
+  - md5sum -c cmake_md5.txt
+  # extract the binaries; the output here is quite lengthy,
+  # so we swallow it to not clutter up the travis console
+  - tar -xvf cmake-3.13.4-Linux-x86_64.tar.gz > /dev/null
+  - mv cmake-3.13.4-Linux-x86_64 cmake-install
+  # add both the top-level directory and the bin directory from the archive
+  # to the system PATH. By adding it to the front of the path we hide the
+  # preinstalled CMake with our own.
+  - PATH=${DEPS_DIR}/cmake-install:${DEPS_DIR}/cmake-install/bin:$PATH
+  # don't forget to switch back to the main build directory once you are done
+  - cd ${TRAVIS_BUILD_DIR}
+
+script:
   # Run CMake
   - mkdir build
   - cd build
   - cmake ../ -DWARNINGS_PEDANTIC=1 -DWARNINGS_AS_ERRORS=1 -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=1
-  - cd ..
-
-script:
+  # Compile
   - $CXX --version
-  - cd build
   - make -j 4 -k
