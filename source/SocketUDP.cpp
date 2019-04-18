@@ -8,8 +8,12 @@ SocketUDP::SocketUDP()
     : m_state(SocketState::CLOSED)
     , m_family()
     , m_socket(m_context)
-    , m_readbuf{}
-    , m_reading(false) {}
+    , m_socketThreadAbort(false)
+    , m_reading(false)
+    , m_sending(false)
+    , m_readbuf{} {
+    m_socketThread = std::thread(std::bind(&SocketUDP::ThreadWorker, this));
+}
 
 std::shared_ptr<Socket> SocketUDP::Create() {
     // Use a factory method like this to allow safe usage of std::shared_from_this, which I need because
@@ -23,7 +27,11 @@ SocketUDP::~SocketUDP() {
     Disconnect();
     Unbind();
 
+    m_socketThreadAbort = true;
     m_context.stop();
+
+    if (m_socketThread.joinable())
+        m_socketThread.join();
 }
 
 ConnectAttemptResult SocketUDP::Connect(const std::string& host, const unsigned short port, SocketConnectCallback_t callback) {
@@ -98,13 +106,16 @@ bool SocketUDP::Bind(const SocketProtocol family, const unsigned short port) {
 }
 
 void SocketUDP::BeginWrite(const RemoteAddress& addr, const uint8_t* data, size_t datalen, SocketWriteCallback_t callback) {
+    m_sending.store(true);
     m_socket.async_send_to(asio::buffer(data, datalen),
         addr.endpoint_udp,
-        [callback](const asio::error_code& error, size_t bytes_transferred) -> void {
+        [&, callback](const asio::error_code& error, size_t bytes_transferred) -> void {
 #if _DEBUG
             if (error)
                 std::cerr << "ERROR IN ASIO: " << error << " --> " << error.message() << std::endl;
 #endif
+
+            m_sending.store(false);
 
             assert(callback);
             callback(static_cast<bool>(error), bytes_transferred);
@@ -143,12 +154,8 @@ bool SocketUDP::IsReadPending() const {
     return m_reading.load();
 }
 
-void SocketUDP::RunCallbacks() {
-    if (m_context.stopped())
-        m_context.restart();
-
-    // run pending callbacks, but in a non-blocking manner (return if none exist)
-    m_context.poll();
+bool SocketUDP::IsWritePending() const {
+    return m_sending.load();
 }
 
 Socket::SocketState SocketUDP::GetState() const {
@@ -157,6 +164,15 @@ Socket::SocketState SocketUDP::GetState() const {
 
 bool SocketUDP::IsOpenAndReady() const {
     return m_socket.is_open();
+}
+
+void SocketUDP::ThreadWorker() {
+    while (!m_socketThreadAbort) {
+        if (m_context.stopped())
+            m_context.restart();
+
+        m_context.run();
+    }
 }
 
 udp SocketUDP::GetAsioProtocol() const {

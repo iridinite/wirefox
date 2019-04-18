@@ -144,14 +144,8 @@ void PacketQueue::ThreadWorker() {
             // skip cycle if socket hasn't fully initialized yet
             if (remote.socket == nullptr || !remote.socket->IsOpenAndReady()) continue;
 
-            // run callbacks on this remote's socket. strictly speaking this is not the most efficient way, as we ping probably the same
-            // socket multiple times (for UDP, all remotes share the same socket), but this keeps it implementation-agnostic (i.e. safe for TCP)
-            remote.socket->RunCallbacks();
-
-            if (remote.active) {
-                DoReadCycle(remote);
-                DoWriteCycle(remote);
-            }
+            DoReadCycle(remote);
+            DoWriteCycle(remote);
         }
 
         // sleep a maximum of x milliseconds, but wake up earlier if requested
@@ -170,13 +164,12 @@ void PacketQueue::DoReadCycle(RemotePeer& remote) {
 
 void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     using namespace std::placeholders;
-    if (remote.pendingWrite) return;
+    if (remote.socket->IsWritePending()) return;
 
     OutgoingDatagram* datagram = remote.GetNextDatagram(m_peer);
     if (!datagram) return;
 
     // dispatch an async write op for this remote
-    remote.pendingWrite = true;
     remote.congestion->NotifySendingBytes(datagram->id, datagram->blob.GetLength());
     remote.socket->BeginWrite(datagram->addr, datagram->blob.GetBuffer(), datagram->blob.GetLength(),
         std::bind(&PacketQueue::OnWriteFinished, this, &remote, datagram->id, _1, _2));
@@ -187,9 +180,6 @@ void PacketQueue::OnWriteFinished(RemotePeer* remote, DatagramID, bool error, si
     //   C2661 'std::tuple<wirefox::detail::PacketQueue *,wirefox::detail::RemotePeer,std::_Ph<1>,std::_Ph<2>>::tuple': no overloaded function takes 4 arguments
     // EDIT: apparently need to use std::ref(), but I don't think directly referencing the temporary in ThreadWorker is a good idea...
     assert(remote);
-
-    // signal to I/O thread that it can pick a new packet and restart writing
-    remote->pendingWrite = false;
 
     if (error)
         m_peer->DisconnectImmediate(remote);

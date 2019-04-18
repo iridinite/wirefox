@@ -118,11 +118,11 @@ namespace wirefox {
             virtual bool IsReadPending() const = 0;
 
             /**
-             * \brief Run any pending callbacks for completed async operations.
-             * 
-             * If no callbacks are currently pending, this function should return immediately.
+             * \brief Indicates whether an async send operation is currently pending.
+             *
+             * If this function returns true, you should not attempt to begin a new send op (Socket::BeginWrite()).
              */
-            virtual void RunCallbacks() = 0;
+            virtual bool IsWritePending() const = 0;
 
             /**
              * \brief Check if the socket is open and ready to write or read data.
