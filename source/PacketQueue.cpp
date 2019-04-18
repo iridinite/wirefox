@@ -159,7 +159,7 @@ void PacketQueue::DoReadCycle(RemotePeer& remote) {
     if (remote.socket->IsReadPending()) return;
 
     // dispatch a new read op for this remote
-    remote.socket->BeginRead(std::bind(&PacketQueue::OnReadFinished, this, _1, _2, _3, _4));
+    remote.socket->BeginRead(std::bind(&PacketQueue::OnReadFinished, shared_from_this(), _1, _2, _3, _4));
 }
 
 void PacketQueue::DoWriteCycle(RemotePeer& remote) {
@@ -172,7 +172,7 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     // dispatch an async write op for this remote
     remote.congestion->NotifySendingBytes(datagram->id, datagram->blob.GetLength());
     remote.socket->BeginWrite(datagram->addr, datagram->blob.GetBuffer(), datagram->blob.GetLength(),
-        std::bind(&PacketQueue::OnWriteFinished, this, &remote, datagram->id, _1, _2));
+        std::bind(&PacketQueue::OnWriteFinished, shared_from_this(), &remote, datagram->id, _1, _2));
 }
 
 void PacketQueue::OnWriteFinished(RemotePeer* remote, DatagramID, bool error, size_t) {

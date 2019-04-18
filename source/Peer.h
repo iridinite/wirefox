@@ -189,7 +189,7 @@ namespace wirefox {
 
             std::shared_ptr<Socket>         m_masterSocket;
             std::unique_ptr<RemotePeer[]>   m_remotes;
-            std::unique_ptr<PacketQueue>    m_queue;
+            std::shared_ptr<PacketQueue>    m_queue;
             std::map<PeerID, RemotePeer*>   m_remoteLookup;
             std::vector<ChannelMode>        m_channels;
         };

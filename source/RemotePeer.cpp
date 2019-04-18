@@ -119,6 +119,8 @@ void RemotePeer::Setup(Peer* master, Handshaker::Origin origin) {
 }
 
 void RemotePeer::Reset() {
+    WIREFOX_LOCK_GUARD(lock);
+
     active = false;
     disconnect = 0;
     id = 0;
