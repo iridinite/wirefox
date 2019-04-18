@@ -11,9 +11,7 @@ SocketUDP::SocketUDP()
     , m_socketThreadAbort(false)
     , m_reading(false)
     , m_sending(false)
-    , m_readbuf{} {
-    m_socketThread = std::thread(std::bind(&SocketUDP::ThreadWorker, this));
-}
+    , m_readbuf{} {}
 
 std::shared_ptr<Socket> SocketUDP::Create() {
     // Use a factory method like this to allow safe usage of std::shared_from_this, which I need because
@@ -26,12 +24,6 @@ std::shared_ptr<Socket> SocketUDP::Create() {
 SocketUDP::~SocketUDP() {
     Disconnect();
     Unbind();
-
-    m_socketThreadAbort = true;
-    m_context.stop();
-
-    if (m_socketThread.joinable())
-        m_socketThread.join();
 }
 
 ConnectAttemptResult SocketUDP::Connect(const std::string& host, const unsigned short port, SocketConnectCallback_t callback) {
@@ -74,12 +66,19 @@ void SocketUDP::Disconnect() {
 }
 
 void SocketUDP::Unbind() {
-    if (!m_socket.is_open()) return;
+    if (m_socket.is_open()) {
+        asio::error_code ec;
+        m_socket.shutdown(udp::socket::shutdown_both, ec);
+        m_socket.cancel(ec);
+        m_socket.close(ec);
+        m_state = SocketState::CLOSED;
+    }
 
-    m_socket.shutdown(udp::socket::shutdown_both);
-    m_socket.cancel();
-    m_socket.close();
-    m_state = SocketState::CLOSED;
+    // stop the worker thread
+    m_socketThreadAbort = true;
+    m_context.stop();
+    if (m_socketThread.joinable())
+        m_socketThread.join();
 }
 
 bool SocketUDP::Bind(const SocketProtocol family, const unsigned short port) {
@@ -100,6 +99,8 @@ bool SocketUDP::Bind(const SocketProtocol family, const unsigned short port) {
         return false;
     }
 
+    // start worker thread
+    m_socketThread = std::thread(std::bind(&SocketUDP::ThreadWorker, this));
     m_state = SocketState::OPEN;
 
     return true;
