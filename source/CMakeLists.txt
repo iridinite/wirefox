@@ -1,5 +1,7 @@
 target_sources(Wirefox
   PRIVATE
+    AwaitableEvent.cpp
+    AwaitableEvent.h
     BinaryStream.cpp
 	Channel.cpp
 	ChannelBuffer.cpp

@@ -33,6 +33,7 @@
 #include <list>
 #include <atomic>
 #include <thread>
+#include <condition_variable>
 #include <mutex>
 #include <random>
 #include <functional>
