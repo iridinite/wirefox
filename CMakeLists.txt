@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.9)
-cmake_policy(VERSION 3.9)
-cmake_policy(SET CMP0076 NEW) # target_sources converts path to absolute
+cmake_minimum_required(VERSION 3.13)
+cmake_policy(VERSION 3.13)
+
+# We need the source paths to be absolute (CMP0076) so enforcing 3.13 is by far easiest
+cmake_policy(SET CMP0076 NEW)
 
 option(BUILD_SHARED_LIBS "Make shared library instead of static library" OFF)
 option(BUILD_C_BINDINGS "Build the C bindings library. You need this if you want to use C#." ON)
