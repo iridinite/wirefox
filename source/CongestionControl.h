@@ -126,10 +126,18 @@ namespace wirefox {
              */
             void                RecalculateRTT();
 
+            /**
+             * \brief Contains information about a datagram previously sent, meant for tracking bytes on the wire.
+             */
             struct DatagramInFlight {
+                /// The size of this datagram in bytes.
                 size_t bytes;
+                /// The time at which this datagram was sent.
                 Timestamp sent;
             };
+
+            /// \cond DOXYGEN_NEVER
+            /// --  I don't think these fields need docs, so just have doxygen ignore them.
 
             PacketID                m_nextPacket;
             DatagramID              m_nextDatagram;
@@ -146,6 +154,8 @@ namespace wirefox {
             std::map<DatagramID, DatagramInFlight> m_outgoing;
             std::vector<DatagramID> m_acks;
             std::vector<DatagramID> m_nacks;
+
+            /// \endcond
         };
 
         /// \endcond
