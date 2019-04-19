@@ -12,32 +12,34 @@ constexpr int CLIENT_PORT = 0;
 int main(int, const char**) {
     // -------- SETUP --------
     // Start up a peer that will act as a listen server
-	auto server = IPeer::Factory::Create(10);
+    auto server = IPeer::Factory::Create(10);
     // Bind the peer to a port. This is required for all peers (even clients), otherwise they can't receive data.
     // If Bind() returns false, the port is in use, or the OS is denying you access for some reason.
-	if (!server->Bind(SocketProtocol::IPv4, SERVER_PORT)) {
-		std::cout << "Server failed to bind to port." << std::endl;
-		return EXIT_FAILURE;
-	}
-	std::cout << "Server setup OK. Server PeerID: " << server->GetMyPeerID() << std::endl;
+    if (!server->Bind(SocketProtocol::IPv4, SERVER_PORT)) {
+        std::cout << "Server failed to bind to port." << std::endl;
+        return EXIT_FAILURE;
+    }
+    // Allow one incoming connection. By default this value is zero, unless explicitly set like this.
+    server->SetMaximumIncomingPeers(1);
+    std::cout << "Server setup OK. Server PeerID: " << server->GetMyPeerID() << std::endl;
 
     // start up a peer that will act as a client
-	auto client = IPeer::Factory::Create();
-	if (!client->Bind(SocketProtocol::IPv4, CLIENT_PORT)) {
-		std::cout << "Client failed to bind to port." << std::endl;
-		return EXIT_FAILURE;
-	}
+    auto client = IPeer::Factory::Create();
+    if (!client->Bind(SocketProtocol::IPv4, CLIENT_PORT)) {
+        std::cout << "Client failed to bind to port." << std::endl;
+        return EXIT_FAILURE;
+    }
     std::cout << "Client setup OK. Client PeerID: " << client->GetMyPeerID() << std::endl;
 
 
     // -------- CONNECTING --------
     // begin connecting the client to the listen server
-	auto connectRet = client->Connect("localhost", SERVER_PORT);
-	if (connectRet != ConnectAttemptResult::OK) {
+    auto connectRet = client->Connect("localhost", SERVER_PORT);
+    if (connectRet != ConnectAttemptResult::OK) {
         // something went wrong; we could not send a connection request to the server
-		std::cout << "Client failed to begin connect: " << int(connectRet) << std::endl;
-		return EXIT_FAILURE;
-	}
+        std::cout << "Client failed to begin connect: " << int(connectRet) << std::endl;
+        return EXIT_FAILURE;
+    }
 
 
     while (true) {
@@ -105,8 +107,8 @@ int main(int, const char**) {
     }
 
     // --------- SHUTDOWN ---------
-	client->Stop();
-	server->Stop();
+    client->Stop();
+    server->Stop();
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

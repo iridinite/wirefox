@@ -35,6 +35,7 @@ TEST_CASE("Peer connectivity", "[Peer]") {
     auto b = wirefox::IPeer::Factory::Create(1);
     REQUIRE(a->Bind(wirefox::SocketProtocol::IPv4, 1337));
     REQUIRE(b->Bind(wirefox::SocketProtocol::IPv4, 0));
+    a->SetMaximumIncomingPeers(1);
 
     SECTION("Can connect to each other") {
         REQUIRE(b->Connect(LOCALHOST, 1337) == wirefox::ConnectAttemptResult::OK);
