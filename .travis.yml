@@ -5,9 +5,6 @@ compiler:
   - gcc
   - clang
 
-git:
-  depth: 1
-
 install:
   # https://riptutorial.com/cmake/example/4723/configure-travis-ci-with-newest-cmake
   # -- Update CMake to 3.13.4 --

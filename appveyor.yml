@@ -8,8 +8,6 @@ configuration:
 - Debug
 - RelWithDebInfo
 
-clone_depth: 1
-
 before_build:
   - mkdir build
   - cd build
