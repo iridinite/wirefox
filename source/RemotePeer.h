@@ -55,7 +55,7 @@ namespace wirefox {
             std::unordered_map<ChannelIndex, std::unique_ptr<ChannelBuffer>> channels;
 
             /// Represents a synchronization primitive. This is used to sync access to the outbox and sentbox.
-            cfg::LockableMutex lock;
+            cfg::RecursiveMutex lock;
 
             /**
              * \brief Reserves this RemotePeer, and randomizes the packet ID sequence.

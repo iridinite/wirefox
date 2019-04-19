@@ -150,6 +150,14 @@ namespace wirefox {
          */
         using LockableMutex =                       std::mutex;
 
+        /**
+         * \brief Declares a recursively lockable mutex.
+         *
+         * This alias is expected to expand to a mutex suitable for the WIREFOX_LOCK_GUARD macro. This
+         * variation should specifically allow multiple locks on the same thread.
+         */
+        using RecursiveMutex =                      std::recursive_mutex;
+
         // Helper macros for concatenating two values
         #define WIREFOX_STRINGIFY_INNER(x, y) x ## y
         #define WIREFOX_STRINGIFY(x, y) WIREFOX_STRINGIFY_INNER(x, y)
@@ -163,7 +171,7 @@ namespace wirefox {
          * \attention The lock guard is expected to follow RAII principles. That is, the mutex should be locked
          * the moment the guard is constructed, and unlocked when the guard is destructed.
          */
-        #define WIREFOX_LOCK_GUARD(__mtx_name)      ::std::lock_guard<::wirefox::cfg::LockableMutex> WIREFOX_STRINGIFY(__guard_line, __LINE__)(__mtx_name)
+        #define WIREFOX_LOCK_GUARD(__mtx_name)      ::std::lock_guard<decltype(__mtx_name)> WIREFOX_STRINGIFY(__guard_line, __LINE__)(__mtx_name)
 
     }
 
