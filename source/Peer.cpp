@@ -278,8 +278,9 @@ void Peer::OnUnconnectedMessage(const RemoteAddress& addr, BinaryStream& instrea
         remote->handshake->Handle(remote, packet);
 
         // if handshake failed, discard this remote endpoint
-        if (remote->handshake->IsDone() && remote->handshake->GetResult() != ConnectResult::OK)
-            remote->Reset();
+        // edit: Handshaker::Complete() already calls remote->Reset() on failure
+        //if (remote->handshake->IsDone() && remote->handshake->GetResult() != ConnectResult::OK)
+            //remote->Reset();
 
         break;
     }

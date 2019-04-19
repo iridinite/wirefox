@@ -39,6 +39,9 @@ void Handshaker::Reply(BinaryStream&& outstream, bool isRetry) {
 void Handshaker::Complete(ConnectResult result) {
     m_result = result;
 
+    // free some memory
+    m_lastReply.Reset();
+
     if (m_completionHandler) {
         BinaryStream payload(sizeof(uint8_t));
         payload.WriteByte(static_cast<uint8_t>(result));
@@ -58,9 +61,6 @@ void Handshaker::Complete(ConnectResult result) {
         Packet notification(notifyCmd, std::move(payload));
         m_completionHandler(std::move(notification));
     }
-
-    // free some memory
-    m_lastReply.Reset();
 }
 
 void Handshaker::Update() {
