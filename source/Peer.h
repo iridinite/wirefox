@@ -178,6 +178,7 @@ namespace wirefox {
 
             PeerID      m_id;
             size_t      m_remotesMax;
+            size_t      m_remotesIncoming;
 
 #if WIREFOX_ENABLE_NETWORK_SIM
             float                       m_simLossRate {0};

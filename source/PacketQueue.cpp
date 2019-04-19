@@ -121,7 +121,7 @@ bool PacketQueue::OutgoingPacket::HasFlag(PacketOptions test) const {
 void PacketQueue::ThreadWorker() {
     while (!m_updateThreadAbort) {
         const size_t remotesMax = m_peer->GetMaximumPeers();
-        for (size_t i = 0; i < remotesMax; i++) {
+        for (size_t i = 0; i <= remotesMax; i++) {
             auto& remote = m_peer->GetRemoteByIndex(i);
             if (!remote.active) continue;
 

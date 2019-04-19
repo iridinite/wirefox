@@ -16,6 +16,7 @@ std::unique_ptr<IPeer> IPeer::Factory::Create(size_t maxPeers) {
 Peer::Peer(size_t maxPeers)
     : m_id(GeneratePeerID())
     , m_remotesMax(maxPeers + 1)
+    , m_remotesIncoming(0)
     , m_masterSocket(cfg::DefaultSocket::Create())
     , m_remotes(std::unique_ptr<RemotePeer[]>(new RemotePeer[m_remotesMax]))
     , m_queue(std::make_shared<PacketQueue>(this))
@@ -23,7 +24,8 @@ Peer::Peer(size_t maxPeers)
 
 Peer::Peer(Peer&& other) noexcept
     : m_id(0)
-    , m_remotesMax(0) {
+    , m_remotesMax(0)
+    , m_remotesIncoming(0) {
     *this = std::move(other);
 }
 
@@ -36,14 +38,26 @@ Peer& Peer::operator=(Peer&& other) noexcept {
     if (this != &other) {
         // steal internal state
         m_id = other.m_id;
-        other.m_id = 0;
         m_remotesMax = other.m_remotesMax;
+        m_remotesIncoming = other.m_remotesIncoming;
+        other.m_id = 0;
         other.m_remotesMax = 0;
+        other.m_remotesIncoming = 0;
+
+#if WIREFOX_ENABLE_NETWORK_SIM
+        m_simLossRate = other.m_simLossRate;
+        m_simExtraPing = other.m_simExtraPing;
+        m_simrng = other.m_simrng;
+        m_simqueue = std::move(other.m_simqueue);
+        other.m_simLossRate = 0;
+        other.m_simExtraPing = 0;
+#endif
 
         m_masterSocket = std::move(other.m_masterSocket);
         m_remotes = std::move(other.m_remotes);
         m_queue = std::move(other.m_queue);
         m_remoteLookup = std::move(other.m_remoteLookup);
+        m_channels = std::move(other.m_channels);
     }
 
     return *this;
@@ -410,16 +424,16 @@ RemotePeer* Peer::GetRemoteByAddress(const RemoteAddress& addr) const {
 }
 
 size_t Peer::GetMaximumPeers() const {
-    return m_remotesMax;
+    return m_remotesMax - 1;
 }
 
 size_t Peer::GetMaximumIncomingPeers() const {
-    return 0; // TODO
+    return m_remotesIncoming;
 }
 
 void Peer::SetMaximumIncomingPeers(size_t incoming) {
-    (void)incoming;
-    // TODO
+    // clamp to [0, m_remotesMax), as slot 0 is reserved for oob
+    m_remotesIncoming = std::min(std::max(incoming, size_t(0)), GetMaximumPeers());
 }
 
 PeerID Peer::GetMyPeerID() const {
@@ -449,10 +463,10 @@ PeerID Peer::GeneratePeerID() {
 }
 
 RemotePeer* Peer::GetNextAvailableConnectSlot() const {
-    // get first slot that is not reserved (also check active as a safety measure)
+    // get first slot that is not reserved
     for (size_t i = 0; i < m_remotesMax; i++) {
         auto& slot = m_remotes[i];
-        if (!slot.reserved && !slot.active)
+        if (!slot.reserved)
             return &slot;
     }
 
@@ -460,11 +474,14 @@ RemotePeer* Peer::GetNextAvailableConnectSlot() const {
 }
 
 RemotePeer* Peer::GetNextAvailableIncomingSlot() const {
-    // TODO: for now identical to GetNextAvailableConnectSlot, but needs to check GetMaximumIncoming
+    if (!GetMaximumIncomingPeers()) return nullptr;
 
-    for (size_t i = 0; i < m_remotesMax; i++) {
+    // linear search from the top down - as opposed to normal GetNextAvailable, which searches from bottom up.
+    // this way we don't have to do any additional counting/searching to keep apart inbound/outbound remotes.
+    auto minIndex = m_remotesMax - GetMaximumIncomingPeers();
+    for (size_t i = m_remotesMax - 1; i >= minIndex; i--) {
         auto& slot = m_remotes[i];
-        if (!slot.reserved && !slot.active)
+        if (!slot.reserved)
             return &slot;
     }
 
