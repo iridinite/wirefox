@@ -14,5 +14,5 @@ void AwaitableEvent::WaitFor(Timespan duration) {
 }
 
 void AwaitableEvent::Signal() {
-    m_cv.notify_one();
+    m_cv.notify_all();
 }
