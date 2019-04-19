@@ -16,16 +16,17 @@ namespace wirefox {
         public:
             /**
              * \brief Constructs a new HandshakerThreeWay instance.
-             *
-             * \param[in]   myID    The PeerID of the local peer, used for identification purposes.
+             * 
+             * \param[in]   master  The owner of \p remote. Used for checking for duplicate PeerIDs.
+             * \param[in]   remote  The RemotePeer controlled by this Handshaker. Some fields are filled in during handshake.
              * \param[in]   origin  Indicates which endpoint initiated this handshake attempt.
              */
-            HandshakerThreeWay(PeerID myID, Origin origin)
-                : Handshaker(myID, origin)
+            HandshakerThreeWay(Peer* master, RemotePeer* remote, Origin origin)
+                : Handshaker(master, remote, origin)
                 , m_status(NOT_STARTED) {}
 
-            void            Begin(const RemotePeer* remote) override;
-            void            Handle(RemotePeer* remote, const Packet& packet) override;
+            void            Begin() override;
+            void            Handle(const Packet& packet) override;
 
             /**
              * \brief Send an error response without an associated RemotePeer or Handshaker instance.

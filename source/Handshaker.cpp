@@ -7,8 +7,9 @@ using namespace wirefox::detail;
 static_assert(cfg::CONNECT_RETRY_COUNT >= 1, "CONNECT_RETRY_COUNT must be at least 1");
 static_assert(cfg::CONNECT_RETRY_DELAY >= 1, "CONNECT_RETRY_DELAY must be at least 1");
 
-Handshaker::Handshaker(PeerID myID, Origin origin)
-    : m_myID(myID)
+Handshaker::Handshaker(Peer* master, RemotePeer* remote, Origin origin)
+    : m_remote(remote)
+    , m_peer(master)
     , m_replyHandler(nullptr)
     , m_origin(origin)
     , m_result(ConnectResult::IN_PROGRESS)

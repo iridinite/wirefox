@@ -80,7 +80,7 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port) {
         slot->addr = addr;
         slot->socket = std::move(socket);
         SetupRemotePeerCallbacks(slot);
-        slot->handshake->Begin(slot);
+        slot->handshake->Begin();
         slot->active = true;
     });
 
@@ -203,6 +203,16 @@ unsigned Peer::GetPing(PeerID who) const {
     return remote->congestion->GetAverageRTT();
 }
 
+void SendRejectionReply(Peer* peer, const RemoteAddress& addr, ConnectResult reason) {
+    // build handshake error message
+    BinaryStream reply;
+    cfg::DefaultHandshaker::WriteOutOfBandErrorReply(reply, peer->GetMyPeerID(), reason);
+
+    // send error response on OOB socket
+    Packet packet(PacketCommand::CONNECT_ATTEMPT, std::move(reply));
+    peer->SendOutOfBand(packet, addr);
+}
+
 void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
     // TODO: IP rate limit check, as countermeasure against SYN flood-style DoS attack
 
@@ -210,11 +220,7 @@ void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
     auto* remote = GetNextAvailableIncomingSlot();
     if (!remote) {
         // no slots available :(
-        BinaryStream noSlotsReply;
-        cfg::DefaultHandshaker::WriteOutOfBandErrorReply(noSlotsReply, GetMyPeerID(), ConnectResult::NO_FREE_SLOTS);
-        // send error response on OOB socket
-        Packet noSlotsPacket(PacketCommand::CONNECT_ATTEMPT, std::move(noSlotsReply));
-        SendOutOfBand(noSlotsPacket, addr);
+        SendRejectionReply(this, addr, ConnectResult::NO_FREE_SLOTS);
         return;
     }
 
@@ -223,12 +229,13 @@ void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
     SetupRemotePeerCallbacks(remote);
     remote->socket = m_masterSocket; // TODO: FIX ME! Incompatible with future TCP implementation. TCP needs to hand us a new socket from an acceptor!
     remote->addr = addr;
-    remote->handshake->Handle(remote, packet);
-    remote->active = true;
+    remote->handshake->Handle(packet);
 
     const auto result = remote->handshake->GetResult();
     if (result != ConnectResult::IN_PROGRESS && result != ConnectResult::OK)
         remote->Reset();
+    else
+        remote->active = true;
 }
 
 void Peer::OnDisconnect(RemotePeer& remote, PacketCommand cmd) {
@@ -289,7 +296,7 @@ void Peer::OnUnconnectedMessage(const RemoteAddress& addr, BinaryStream& instrea
         if (remote->handshake->IsDone())
             break;
 
-        remote->handshake->Handle(remote, packet);
+        remote->handshake->Handle(packet);
 
         // if handshake failed, discard this remote endpoint
         // edit: Handshaker::Complete() already calls remote->Reset() on failure

@@ -12,6 +12,7 @@ namespace wirefox {
 
         struct PacketHeader;
         struct RemotePeer;
+        class Peer;
 
         /**
          * \cond WIREFOX_INTERNAL
@@ -40,7 +41,7 @@ namespace wirefox {
             virtual ~Handshaker() = default;
 
             /// Initiate the handshake.
-            virtual void            Begin(const RemotePeer* remote) = 0;
+            virtual void            Begin() = 0;
 
             /**
              * \brief Handle an incoming packet as a part of an ongoing handshake.
@@ -48,7 +49,7 @@ namespace wirefox {
              * \param[in]   remote  The RemotePeer who represents the remote endpoint.
              * \param[in]   packet  The datagram that was received from \p remote.
              */
-            virtual void            Handle(RemotePeer* remote, const Packet& packet) = 0;
+            virtual void            Handle(const Packet& packet) = 0;
 
             /**
              * \brief Finalize the handshake and set its result.
@@ -79,10 +80,11 @@ namespace wirefox {
             /**
              * \brief Constructs a new Handshaker instance.
              * 
-             * \param[in]   myID    The PeerID of the local peer, used for identification purposes.
+             * \param[in]   master  The owner of \p remote. Used for checking for duplicate PeerIDs.
+             * \param[in]   remote  The RemotePeer controlled by this Handshaker. Some fields are filled in during handshake.
              * \param[in]   origin  Indicates which endpoint initiated this handshake attempt.
              */
-            Handshaker(PeerID myID, Origin origin);
+            Handshaker(Peer* master, RemotePeer* remote, Origin origin);
 
             /**
              * \brief Send a handshake part to the remote endpoint.
@@ -92,8 +94,8 @@ namespace wirefox {
              */
             void                    Reply(BinaryStream&& outstream, bool isRetry = false);
 
-            /// The PeerID of the local peer, used for identification purposes.
-            PeerID                  m_myID;
+            RemotePeer*             m_remote;
+            Peer*                   m_peer;
 
         private:
             ReplyHandler_t          m_replyHandler;

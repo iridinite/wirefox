@@ -115,7 +115,7 @@ void RemotePeer::Setup(Peer* master, Handshaker::Origin origin) {
 
     // used by remote #0 to stop handshake from being instantiated, as out-of-band comms should not do handshakes
     if (origin != Handshaker::Origin::INVALID)
-        handshake = std::make_unique<cfg::DefaultHandshaker>(master->GetMyPeerID(), origin);
+        handshake = std::make_unique<cfg::DefaultHandshaker>(master, this, origin);
 }
 
 void RemotePeer::Reset() {

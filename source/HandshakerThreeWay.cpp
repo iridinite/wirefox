@@ -1,6 +1,7 @@
 #include "PCH.h"
 #include "HandshakerThreeWay.h"
 #include "RemotePeer.h"
+#include "Peer.h"
 
 using namespace wirefox::detail;
 
@@ -11,26 +12,26 @@ static constexpr size_t HANDSHAKE_LENGTH =
     sizeof(uint8_t) +               // handshake stage
     sizeof(uint8_t);                // error code, if stage == 2
 
-void HandshakerThreeWay::Begin(const RemotePeer*) {
+void HandshakerThreeWay::Begin() {
     // Begin should only be called if this local socket is the one initiating the connection
     assert(GetOrigin() == Origin::SELF);
 
     // write a connection request and send it
     BinaryStream hello(HANDSHAKE_LENGTH);
-    WriteReplyHeader(hello, m_myID);
+    WriteReplyHeader(hello, m_peer->GetMyPeerID());
     hello.WriteByte(0); // connection phase 0
 
     m_status = AWAITING_ACK;
     Reply(std::move(hello));
 }
 
-void HandshakerThreeWay::Handle(RemotePeer* remote, const Packet& packet) {
+void HandshakerThreeWay::Handle(const Packet& packet) {
     if (IsDone()) return;
 
     // prepare the leading part of the reply
     BinaryStream instream = packet.GetStream();
     BinaryStream reply(HANDSHAKE_LENGTH);
-    WriteReplyHeader(reply, m_myID);
+    WriteReplyHeader(reply, m_peer->GetMyPeerID());
 
 
     // read and compare the magic number, to make sure we're talking to a Wirefox endpoint
@@ -52,9 +53,17 @@ void HandshakerThreeWay::Handle(RemotePeer* remote, const Packet& packet) {
 
     // now that that's out of the way, read some state data
     const PeerID remoteID = instream.ReadUInt64();
-    // TODO: check if remoteID is already in use
-    remote->id = remoteID;
     const uint8_t stage = instream.ReadByte();
+
+    auto* competitor = m_peer->GetRemoteByID(remoteID);
+    if (competitor && competitor != m_remote) {
+        // there is already a peer with the same ID number
+        ReplyWithError(reply, ConnectResult::ALREADY_CONNECTED);
+        Complete(ConnectResult::ALREADY_CONNECTED);
+        return;
+    }
+
+    m_remote->id = remoteID;
 
     // discard packets that mismatch with our expected stage; they're probably resends or delayed arrivals
     if (stage == 0 && m_status == AWAITING_ACK) return;
