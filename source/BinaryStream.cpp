@@ -345,8 +345,8 @@ int BinaryStream::Read7BitEncodedInt() {
         const uint8_t snippet = ReadByte();
 
         // append the snippet to the output number
-        output <<= 7;
-        output |= (snippet & 0x7F);
+        const size_t offset = 7 * i;
+        output |= (snippet & 0x7F) << offset;
 
         // if MSB is not set, then the 7-bit int has ended
         if ((snippet & 0x80) == 0)
