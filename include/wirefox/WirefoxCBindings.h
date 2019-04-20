@@ -25,11 +25,8 @@ typedef uint8_t TChannelIndex;
 
 // Empty enums just to have types rather than ints in function signatures. I really don't want to duplicate
 // all enums here *again*. If you're actually writing C and need those enums, copy them from Enumerations.h.
-typedef enum {} ESocketProtocol;
-typedef enum {} EConnectAttemptResult;
-typedef enum {} EChannelMode;
-typedef enum : uint8_t {} EPacketOptions;
-typedef enum : uint8_t {} EPacketPriority;
+typedef enum { _DUMMY_1 } ESocketProtocol, EConnectAttemptResult, EChannelMode;
+typedef enum : uint8_t { _DUMMY_2 } EPacketOptions, EPacketPriority;
 
 WIREFOX_API HWirefoxPeer*   wirefox_peer_create(size_t maxPeers);
 WIREFOX_API void            wirefox_peer_destroy(HWirefoxPeer* handle);
