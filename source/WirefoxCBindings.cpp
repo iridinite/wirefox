@@ -69,8 +69,20 @@ int wirefox_peer_bind(HWirefoxPeer* handle, ESocketProtocol protocol, uint16_t p
     return HandleToPeer(handle)->Bind(static_cast<SocketProtocol>(protocol), port) ? 1 : 0;
 }
 
+void wirefox_peer_stop(HWirefoxPeer* handle, unsigned linger) {
+    HandleToPeer(handle)->Stop(Time::FromMilliseconds(linger));
+}
+
 EConnectAttemptResult wirefox_peer_connect(HWirefoxPeer* handle, const char* host, uint16_t port) {
     return static_cast<EConnectAttemptResult>(HandleToPeer(handle)->Connect(host, port));
+}
+
+void wirefox_peer_disconnect(HWirefoxPeer* handle, TPeerID who, unsigned linger) {
+    HandleToPeer(handle)->Disconnect(who, Time::FromMilliseconds(linger));
+}
+
+void wirefox_peer_disconnect_immediate(HWirefoxPeer* handle, TPeerID who) {
+    HandleToPeer(handle)->DisconnectImmediate(who);
 }
 
 void wirefox_peer_send_loopback(HWirefoxPeer* handle, HPacket* packet) {
@@ -78,9 +90,10 @@ void wirefox_peer_send_loopback(HWirefoxPeer* handle, HPacket* packet) {
     HandleToPeer(handle)->SendLoopback(*typedPacket);
 }
 
-int wirefox_peer_send(HWirefoxPeer* handle, HPacket* packet, TPeerID recipient, EPacketOptions options) {
-    return HandleToPeer(handle)->Send(*HandleToPacket(packet), static_cast<PeerID>(recipient), static_cast<PacketOptions>(options))
-        ? 1 : 0;
+TPacketID wirefox_peer_send(HWirefoxPeer* handle, HPacket* packet, TPeerID recipient, EPacketOptions options, EPacketPriority priority, TChannelIndex channelIndex) {
+    auto peer = HandleToPeer(handle);
+    auto channel = Channel(channelIndex, peer->GetChannelModeByIndex(channelIndex));
+    return peer->Send(*HandleToPacket(packet), static_cast<PeerID>(recipient), static_cast<PacketOptions>(options), static_cast<PacketPriority>(priority), channel);
 }
 
 HPacket* wirefox_peer_receive(HWirefoxPeer* handle) {
@@ -91,6 +104,43 @@ HPacket* wirefox_peer_receive(HWirefoxPeer* handle) {
     m_handlesPacket.push_back(std::move(uptr));
 
     return PacketToHandle(m_handlesPacket.back().get());
+}
+
+TChannelIndex wirefox_peer_make_channel(HWirefoxPeer* handle, EChannelMode mode) {
+    auto channel = HandleToPeer(handle)->MakeChannel(static_cast<ChannelMode>(mode));
+    return channel.id;
+}
+
+EChannelMode wirefox_peer_get_channel_mode(HWirefoxPeer* handle, TChannelIndex index) {
+    return static_cast<EChannelMode>(HandleToPeer(handle)->GetChannelModeByIndex(index));
+}
+
+TPeerID wirefox_peer_get_my_id(HWirefoxPeer* handle) {
+    return static_cast<TPeerID>(HandleToPeer(handle)->GetMyPeerID());
+}
+
+size_t wirefox_peer_get_max_peers(HWirefoxPeer* handle) {
+    return HandleToPeer(handle)->GetMaximumPeers();
+}
+
+size_t wirefox_peer_get_max_incoming_peers(HWirefoxPeer* handle) {
+    return HandleToPeer(handle)->GetMaximumIncomingPeers();
+}
+
+void wirefox_peer_set_max_incoming_peers(HWirefoxPeer* handle, size_t incoming) {
+    HandleToPeer(handle)->SetMaximumIncomingPeers(incoming);
+}
+
+unsigned wirefox_peer_get_ping(HWirefoxPeer* handle, TPeerID who) {
+    return HandleToPeer(handle)->GetPing(static_cast<TPeerID>(who));
+}
+
+int wirefox_peer_get_ping_available(HWirefoxPeer* handle, TPeerID who) {
+    return HandleToPeer(handle)->GetPingAvailable(static_cast<TPeerID>(who)) ? 1 : 0;
+}
+
+void wirefox_peer_set_network_sim(HWirefoxPeer* handle, float packetLoss, unsigned additionalPing) {
+    HandleToPeer(handle)->SetNetworkSimulation(packetLoss, additionalPing);
 }
 
 HPacket* wirefox_packet_create(uint8_t cmd, const uint8_t* data, size_t len) {
@@ -133,4 +183,4 @@ TPeerID wirefox_packet_get_sender(HPacket* packet) {
     return static_cast<TPeerID>(HandleToPacket(packet)->GetSender());
 }
 
-#endif
+#endif // WIREFOX_BUILD_C_BINDINGS
