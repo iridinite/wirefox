@@ -1,3 +1,11 @@
+/**
+ * Wirefox Networking API
+ * (C) Mika Molenkamp, 2019.
+ *
+ * Licensed under the BSD 3-Clause License, see the LICENSE file in the project
+ * root folder for more information.
+ */
+
 using JetBrains.Annotations;
 
 namespace Iridinite.Wirefox {
@@ -56,6 +64,17 @@ namespace Iridinite.Wirefox {
         IPv6
     };
 
+    /// Indicates how packets in the same channel should be delivered relative to each other.
+    [PublicAPI]
+    public enum ChannelMode {
+        /// Packets are delivered as they arrived.
+        UNORDERED,
+        /// Packets are delivered in order. Packets will be withheld indefinitely until missing packets arrive.
+        ORDERED,
+        /// Packets are delivered in order. Any packets that arrive out of order are discarded.
+        SEQUENCED
+    };
+
     /// Indicates additional settings for how a packet should be sent.
     [PublicAPI]
     public enum PacketOptions {
@@ -63,36 +82,52 @@ namespace Iridinite.Wirefox {
         UNRELIABLE      = 0,
         /// The packet is reliable, meaning it will be automatically resent if considered lost in transit.
         RELIABLE        = 1 << 0,
+        /// Indicates that the local peer should be notified when the packet is acked, or deemed lost.
+        WITH_RECEIPT    = 1 << 1
+    };
+
+    /// Indicates the relative priority of a packet.
+    [PublicAPI]
+    public enum PacketPriority : byte {
+        /// Lowered priority.
+        LOW,
+        /// Average priority.
+        MEDIUM,
+        /// Elevated priority.
+        HIGH,
+        /// Critically elevated priority.
+        CRITICAL
     };
 
     /// Describes the function and/or meaning of a Packet.
     [PublicAPI]
     public enum PacketCommand : byte {
-        // ----- INTERNAL - These will never be returned to you as end-user ----- //
-
-        /// Ping request.
-        PING,
-        /// Ping reply.
-        PONG,
-        /// Initiates a connection request, or a part of a handshake sequence.
-        CONNECT_ATTEMPT,
-        DISCONNECT_REQUEST,
-        DISCONNECT_ACK,
-
-        // ----- USER - These may be returned through Peer::Receive() ----- //
-
         /// Indicates that a connection attempt was successful.
-        NOTIFY_CONNECT_SUCCESS,
+        ///     No payload.  Sender is newly connected peer.
+        NOTIFY_CONNECT_SUCCESS = 5,
         /// Indicates that a connection attempt has failed.
-        ///     (1) result: ConnectResult, detailed failure reason.
+        ///     (1 byte) ConnectResult, detailed failure reason.
         NOTIFY_CONNECT_FAILED,
         /// Indicates that a remote peer has successfully connected to us.
-        ///     No payload.
+        ///     No payload.  Sender is newly connected peer.
         NOTIFY_CONNECTION_INCOMING,
+        /// Indicates that a remote peer has disconnected because they are no longer responding.
+        ///     No payload.  Sender is the disconnected peer.
         NOTIFY_CONNECTION_LOST,
+        /// Indicates that a remote peer has gracefully disconnected.
+        ///     No payload.  Sender is the disconnected peer.
         NOTIFY_DISCONNECTED,
 
-        USER_PACKET
+        /// Receive-receipt indicating successful delivery.
+        ///     (4 bytes) PacketID, the ID for which a receipt was requested with PacketOptions::WITH_RECEIPT.
+        NOTIFY_RECEIPT_ACKED,
+        /// Receive-receipt indicating delivery failure.
+        ///     (4 bytes) PacketID, the ID for which a receipt was requested with PacketOptions::WITH_RECEIPT.
+        ///     Note that delivery failure for reliable packets will cause the connection to be closed.
+        NOTIFY_RECEIPT_LOST,
+
+        /// \internal Placeholder for the first user packet.
+        USER_PACKET = 12
     }
 
 }

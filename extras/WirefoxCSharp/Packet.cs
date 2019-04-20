@@ -1,3 +1,11 @@
+/**
+ * Wirefox Networking API
+ * (C) Mika Molenkamp, 2019.
+ *
+ * Licensed under the BSD 3-Clause License, see the LICENSE file in the project
+ * root folder for more information.
+ */
+
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -37,8 +45,16 @@ namespace Iridinite.Wirefox {
             m_handle = handle;
             m_cmd = (PacketCommand)NativeMethods.wirefox_packet_get_cmd(handle);
             m_sender = new PeerID(NativeMethods.wirefox_packet_get_sender(handle));
-            m_payload = new byte[NativeMethods.wirefox_packet_get_length(handle).ToUInt32()];
-            Marshal.Copy(NativeMethods.wirefox_packet_get_data(handle), m_payload, 0, m_payload.Length);
+
+            var dataptr = NativeMethods.wirefox_packet_get_data(handle);
+            if (dataptr == IntPtr.Zero) {
+                // nullptr payload is allowed
+                m_payload = new byte[0];
+            } else {
+                // copy payload of correct length over to managed land
+                m_payload = new byte[NativeMethods.wirefox_packet_get_length(handle).ToUInt32()];
+                Marshal.Copy(NativeMethods.wirefox_packet_get_data(handle), m_payload, 0, m_payload.Length);
+            }
         }
 
         ~Packet() {
