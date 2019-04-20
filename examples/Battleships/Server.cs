@@ -54,6 +54,7 @@ namespace Iridinite.Wirefox.Battleships {
 
             peer = new Peer(2);
             peer.Bind(SocketProtocol.IPv4, GamePort);
+            peer.SetMaxIncomingPeers(2);
 
             // unfortunately we don't have a proper game loop like a 3D renderer does, so we'll use a thread instead
             worker = new Thread(ThreadWorker) {
