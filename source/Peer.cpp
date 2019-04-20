@@ -206,7 +206,7 @@ bool Peer::GetPingAvailable(PeerID who) const {
 
 unsigned Peer::GetPing(PeerID who) const {
     auto* remote = GetRemoteByID(who);
-    if (!remote) return false;
+    if (!remote) return 0;
 
     return remote->congestion->GetAverageRTT();
 }
