@@ -2,7 +2,7 @@ enable_language(CSharp)
 set(LIBRARY_NAME "DemoBattleships")
 include(CSharpUtilities)
 
-set(CMAKE_CSharp_FLAGS "/langversion:7")
+set(CMAKE_CSharp_FLAGS "/langversion:7 /platform:x64")
 
 add_executable(${LIBRARY_NAME}
   App.config
@@ -30,7 +30,7 @@ add_executable(${LIBRARY_NAME}
   Properties/Settings.settings
 )
 
-target_link_libraries(${LIBRARY_NAME} PRIVATE WirefoxCSharp)
+target_link_libraries(${LIBRARY_NAME} PRIVATE WirefoxSharp)
 
 csharp_set_windows_forms_properties(
   FormConnect.cs
