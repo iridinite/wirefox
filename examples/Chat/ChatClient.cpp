@@ -4,28 +4,24 @@ namespace {
 
     std::string ConnectResultToString(wirefox::ConnectResult r) {
         switch (r) {
-        case wirefox::ConnectResult::IN_PROGRESS:
-            return "IN_PROGRESS";
-        case wirefox::ConnectResult::OK:
-            return "OK";
         case wirefox::ConnectResult::CONNECT_FAILED:
-            return "CONNECT_FAILED";
+            return "Connection timed out or contact failed.";
         case wirefox::ConnectResult::INCOMPATIBLE_PROTOCOL:
-            return "INCOMPATIBLE_PROTOCOL";
+            return "Communication error: incompatible protocol.";
         case wirefox::ConnectResult::INCOMPATIBLE_VERSION:
-            return "INCOMPATIBLE_VERSION";
+            return "Communication error: incompatible Wirefox version.";
         case wirefox::ConnectResult::INCOMPATIBLE_SECURITY:
-            return "INCOMPATIBLE_SECURITY";
+            return "Communication error: incompatible security settings.";
         case wirefox::ConnectResult::INVALID_PASSWORD:
-            return "INVALID_PASSWORD";
+            return "The password is incorrect.";
         case wirefox::ConnectResult::NO_FREE_SLOTS:
-            return "NO_FREE_SLOTS";
+            return "The server is full.";
         case wirefox::ConnectResult::ALREADY_CONNECTED:
-            return "ALREADY_CONNECTED";
+            return "You are already connected to this server.";
         case wirefox::ConnectResult::IP_RATE_LIMITED:
-            return "IP_RATE_LIMITED";
+            return "This IP is being rate limited. Try again later.";
         case wirefox::ConnectResult::BANNED:
-            return "BANNED";
+            return "You are banned from this server.";
         default:
             return "<?>";
         }
@@ -34,7 +30,8 @@ namespace {
 }
 
 ChatClient::ChatClient(unsigned short port)
-    : m_port(port)
+    : m_server(0)
+    , m_port(port)
     , m_connected(false) {
     m_peer = wirefox::IPeer::Factory::Create();
     m_peer->Bind(wirefox::SocketProtocol::IPv4, 0); // bind to any port, doesn't matter for client
@@ -101,7 +98,7 @@ void ChatClient::Connect(const std::string& host, unsigned short port) {
     case wirefox::ConnectAttemptResult::INVALID_PARAMETER:
     case wirefox::ConnectAttemptResult::INVALID_STATE:
     case wirefox::ConnectAttemptResult::NO_FREE_SLOTS:
-        std::cout << "[ERROR] Internal error in ChatClient::Connect: ConnectAttemptResult invalid" << std::endl;
+        std::cout << "[ERROR] Internal error in ChatClient::Connect: ConnectAttemptResult " << std::to_string(int(attempt)) << std::endl;
         break;
     case wirefox::ConnectAttemptResult::INVALID_HOSTNAME:
         std::cout << "That host name couldn't be resolved. Check the spelling?" << std::endl;
@@ -126,13 +123,20 @@ void ChatClient::HandleInput(const std::string& input) {
         Connect(hostname, m_port);
 
     } else if (strcmp(input.c_str(), "/dc") == 0 || strcmp(input.c_str(), "/disconnect") == 0) {
+        if (!m_connected) {
+            std::cout << "You're not connected to a server." << std::endl;
+            return;
+        }
         std::cout << "Disconnecting..." << std::endl;
         m_peer->Disconnect(m_server);
 
     } else {
-        // treat as message
+        assert(input.size() > 0);
+
+        // treat as text message, pack it into a packet and send to server
         wirefox::BinaryStream outstream;
         outstream.WriteString(input);
+
         wirefox::Packet packet(static_cast<wirefox::PacketCommand>(ChatPacketCommand::MESSAGE), std::move(outstream));
         m_peer->Send(packet, m_server, wirefox::PacketOptions::RELIABLE, wirefox::PacketPriority::MEDIUM, m_channelChat);
     }
