@@ -54,8 +54,7 @@ namespace wirefox {
             /**
              * \brief Handle an incoming packet as a part of an ongoing handshake.
              * 
-             * \param[in]   remote  The RemotePeer who represents the remote endpoint.
-             * \param[in]   packet  The datagram that was received from \p remote.
+             * \param[in]   packet  The message that was received from our assigned remote.
              */
             virtual void            Handle(const Packet& packet) = 0;
 
