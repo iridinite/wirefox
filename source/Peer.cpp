@@ -474,7 +474,15 @@ bool Peer::PollArtificialPacketLoss() {
 #endif
 
 PeerID Peer::GeneratePeerID() {
-    return std::mt19937_64(Time::Now())();
+    static_assert(std::is_same<std::mt19937_64::result_type, PeerID>::value, "RNG is expected to return 64-bit number");
+    std::mt19937_64 rng(Time::Now());
+
+    PeerID ret;
+    do {
+        ret = rng();
+    } while (ret == 0);
+
+    return ret;
 }
 
 RemotePeer* Peer::GetNextAvailableConnectSlot() const {
