@@ -237,13 +237,8 @@ void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
     SetupRemotePeerCallbacks(remote);
     remote->socket = m_masterSocket; // TODO: FIX ME! Incompatible with future TCP implementation. TCP needs to hand us a new socket from an acceptor!
     remote->addr = addr;
+    remote->active = true;
     remote->handshake->Handle(packet);
-
-    const auto result = remote->handshake->GetResult();
-    if (result != ConnectResult::IN_PROGRESS && result != ConnectResult::OK)
-        remote->Reset();
-    else
-        remote->active = true;
 }
 
 void Peer::OnDisconnect(RemotePeer& remote, PacketCommand cmd) {
