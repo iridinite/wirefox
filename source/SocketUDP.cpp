@@ -87,6 +87,9 @@ bool SocketUDP::Bind(const SocketProtocol family, const unsigned short port) {
         m_socket.open(protocol);
         m_socket.bind(udp::endpoint(protocol, port));
 
+        // enable UDP multicasting
+        m_socket.set_option(asio::socket_base::broadcast(true));
+
     } catch (const asio::system_error&) {
         return false;
     }
