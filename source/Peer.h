@@ -64,6 +64,11 @@ namespace wirefox {
             void                        SendLoopback(const Packet& packet) override;
             std::unique_ptr<Packet>     Receive() override;
 
+            void                        SetOfflineAdvertisement(const BinaryStream& data) override;
+            void                        DisableOfflineAdvertisement() override;
+            void                        Ping(const std::string& hostname, uint16_t port) const override;
+            void                        PingLocalNetwork(uint16_t port) const override;
+
             /**
              * \brief Sends an unconnected packet to an arbitrary remote endpoint.
              * 

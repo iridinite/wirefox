@@ -165,12 +165,44 @@ void Peer::SendLoopback(const Packet& packet) {
     m_queue->EnqueueLoopback(packet);
 }
 
+void Peer::Ping(const std::string& hostname, uint16_t port) const {
+    RemoteAddress addr;
+    if (!m_masterSocket->Resolve(hostname, port, addr)) return;
+
+    Packet ping(PacketCommand::PING, nullptr, 0);
+    m_queue->EnqueueOutOfBand(ping, addr);
+}
+
+void Peer::PingLocalNetwork(uint16_t port) const {
+    // get an appropriate multicast address based on the socket family
+    std::string multicast;
+    switch (m_masterSocket->GetProtocol()) {
+    case SocketProtocol::IPv4:
+        multicast = "255.255.255.255";
+        break;
+    case SocketProtocol::IPv6:
+        multicast = "FF02::1";
+        break;
+    }
+
+    // queue as normal OOB ping packet
+    Ping(multicast, port);
+}
+
 void Peer::SendOutOfBand(const Packet& packet, const RemoteAddress& addr) {
     m_queue->EnqueueOutOfBand(packet, addr);
 }
 
 std::unique_ptr<Packet> Peer::Receive() {
     return m_queue->DequeueIncoming();
+}
+
+void Peer::SetOfflineAdvertisement(const BinaryStream&) {
+    
+}
+
+void Peer::DisableOfflineAdvertisement() {
+    
 }
 
 Channel Peer::MakeChannel(ChannelMode mode) {

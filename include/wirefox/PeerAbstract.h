@@ -13,8 +13,8 @@
 
 namespace wirefox {
 
+    class BinaryStream;
     class Packet;
-    struct Channel;
 
     /**
      * \brief Represents a network peer.
@@ -157,6 +157,50 @@ namespace wirefox {
         virtual std::unique_ptr<Packet> Receive() = 0;
 
         /**
+         * \brief Enables system advertisements, and sets the specified data as the response.
+         * 
+         * Use this function, together with PingLocalNetwork(), to perform discovery of peers (game lobbies, etc)
+         * on the local network. If this system receives a ping from a remote Wirefox peer, it will respond with
+         * the data you specify here (the 'advertisement').
+         * 
+         * \param[in]   data        The payload to include with offline ping responses. The data is copied.
+         * \sa DisableOfflineAdvertisement(), PingLocalNetwork()
+         */
+        virtual void                    SetOfflineAdvertisement(const BinaryStream& data) = 0;
+
+        /**
+         * \brief Disables responding to pings, and discards the previously set advertisement payload.
+         * 
+         * If you no longer want this Peer to respond to unconnected pings from remote systems, use this method.
+         * Does nothing if SetOfflineAdvertisement() was never called before.
+         */
+        virtual void                    DisableOfflineAdvertisement() = 0;
+
+        /**
+         * \brief Sends an offline ping to a specific remote endpoint.
+         * 
+         * The remote endpoint, if reachable, and if advertising enabled, will respond with a pong and the data
+         * that was set with SetOfflineAdvertisement().
+         * 
+         * \param[in]   hostname    The hostname or IP address to ping.
+         * \param[in]   port        The port on which the remote endpoint is expected to listen.
+         */
+        virtual void                    Ping(const std::string& hostname, uint16_t port) const = 0;
+
+        /**
+         * \brief Sends an offline ping to the local network.
+         *
+         * Any remote peers on the same network that have advertising enabled, will respond with a pong and the
+         * data that was set with SetOfflineAdvertisement().
+         * 
+         * \note This feature relies on the broadcasting capability of the connected router(s). These may be
+         * disabled for whatever reason on your network (e.g. by a network administrator).
+         * 
+         * \param[in]   port        The port on which the remote endpoints are expected to listen.
+         */
+        virtual void                    PingLocalNetwork(uint16_t port) const = 0;
+
+        /**
          * \brief Registers and returns a new Channel for your packets.
          * 
          * Use Channels to enhance sequenced and ordered packet streams. Packets will only be ordered relative to
@@ -226,7 +270,9 @@ namespace wirefox {
          */
         virtual void                    SetMaximumIncomingPeers(size_t incoming) = 0;
 
-        /// Returns the local peer's PeerID.
+        /**
+         * \brief Returns the local peer's PeerID.
+         */
         virtual PeerID                  GetMyPeerID() const = 0;
 
         /**
