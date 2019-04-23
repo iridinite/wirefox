@@ -26,20 +26,20 @@ namespace wirefox {
             RemotePeer();
             ~RemotePeer() = default;
 
-            /// Indicates whether this slot is currently in use.
-            std::atomic_bool reserved;
+            /// Represents a synchronization primitive. This is used to sync access to the outbox and sentbox.
+            cfg::RecursiveMutex lock;
 
-            /// Indicates whether this slot should receive socket callbacks, and should have read/write cycles invoked.
-            std::atomic_bool active;
-
-            /// Indicates when the disconnect grace period ends. If IsDisconnecting() == false, this value has no meaning.
-            std::atomic<Timestamp> disconnect;
-
-            /// The unique ID number of this remote endpoint. May be zero if handshake incomplete.
-            PeerID id;
+            /// A sparse array of channel backlogs. Ordered / sequenced packets may be temporarily held here.
+            std::unordered_map<ChannelIndex, std::unique_ptr<ChannelBuffer>> channels;
 
             /// The address of this remote endpoint. Datagrams will be sent here.
             RemoteAddress addr;
+
+            /// A collection of packets (plus headers) that haven't yet been fully delivered.
+            std::vector<PacketQueue::OutgoingPacket> outbox;
+
+            /// A collection of datagrams that haven't yet been fully delivered.
+            std::vector<PacketQueue::OutgoingDatagram> sentbox;
 
             /// A handle to the Socket that should be used to send datagrams to \p addr.
             std::shared_ptr<Socket> socket;
@@ -53,17 +53,17 @@ namespace wirefox {
             /// A handle to an object that services requests for delivery receipts.
             std::unique_ptr<ReceiptTracker> receipt;
 
-            /// A collection of packets (plus headers) that haven't yet been fully delivered.
-            std::vector<PacketQueue::OutgoingPacket> outbox;
+            /// The unique ID number of this remote endpoint. May be zero if handshake incomplete.
+            PeerID id;
 
-            /// A collection of datagrams that haven't yet been fully delivered.
-            std::vector<PacketQueue::OutgoingDatagram> sentbox;
+            /// Indicates when the disconnect grace period ends. If IsDisconnecting() == false, this value has no meaning.
+            std::atomic<Timestamp> disconnect;
 
-            /// A sparse array of channel backlogs. Ordered / sequenced packets may be temporarily held here.
-            std::unordered_map<ChannelIndex, std::unique_ptr<ChannelBuffer>> channels;
+            /// Indicates whether this slot is currently in use.
+            std::atomic_bool reserved;
 
-            /// Represents a synchronization primitive. This is used to sync access to the outbox and sentbox.
-            cfg::RecursiveMutex lock;
+            /// Indicates whether this slot should receive socket callbacks, and should have read/write cycles invoked.
+            std::atomic_bool active;
 
             /**
              * \brief Reserves this RemotePeer, and randomizes the packet ID sequence.
