@@ -193,8 +193,9 @@ namespace wirefox {
          * Any remote peers on the same network that have advertising enabled, will respond with a pong and the
          * data that was set with SetOfflineAdvertisement().
          * 
-         * \note This feature relies on the broadcasting capability of the connected router(s). These may be
-         * disabled for whatever reason on your network (e.g. by a network administrator).
+         * \note This feature relies on the multicasting capabilities of the connected router(s). These may be
+         * disabled for whatever reason on your network (e.g. by a network administrator), or may be unsupported
+         * (particularly IPv6 support is still shaky on many routers).
          * 
          * \param[in]   port        The port on which the remote endpoints are expected to listen.
          */
