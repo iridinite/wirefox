@@ -62,10 +62,6 @@ namespace wirefox {
 
             uint8_t                 m_readbuf[cfg::PACKETQUEUE_IN_LEN];
             asio::ip::udp::endpoint m_readsender;
-
-#ifdef WIREFOX_ENABLE_SOCKET_LOCK
-            LockableMutex           m_lock;
-#endif
         };
 
         /// \endcond
