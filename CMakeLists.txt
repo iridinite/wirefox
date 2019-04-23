@@ -27,7 +27,6 @@ set(LIBRARY_NAME "Wirefox")
 add_library(Wirefox "")
 
 # explicitly require threading library (for GCC)
-set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(Wirefox Threads::Threads)
 
