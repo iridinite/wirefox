@@ -42,26 +42,10 @@ ConnectAttemptResult SocketUDP::Connect(const std::string& host, const unsigned 
     if (host.empty() || port == 0)
         return ConnectAttemptResult::INVALID_PARAMETER;
 
-    // pick the desired IP version
-    const auto protocol = GetAsioProtocol();
-
     // attempt to resolve the given hostname into an endpoint
-    udp::endpoint endpoint;
-    udp::resolver resolver(m_context);
-    try {
-        udp::resolver::iterator it = resolver.resolve(protocol, host, std::to_string(port));
-        if (it == udp::resolver::iterator() /* end */)
-            return ConnectAttemptResult::INVALID_HOSTNAME;
-
-        endpoint = *it;
-
-    } catch (const asio::system_error&) {
-        return ConnectAttemptResult::INVALID_HOSTNAME;
-    }
-
-    // for simplicity, assume the first endpoint is going to work
     RemoteAddress addr;
-    addr.endpoint_udp = endpoint;
+    if (!Resolve(host, port, addr))
+        return ConnectAttemptResult::INVALID_HOSTNAME;
 
     assert(callback);
     m_context.post(std::bind(callback, false, addr, shared_from_this(), std::string()));
@@ -111,6 +95,26 @@ bool SocketUDP::Bind(const SocketProtocol family, const unsigned short port) {
     m_socketThread = std::thread(std::bind(&SocketUDP::ThreadWorker, this));
     m_state = SocketState::OPEN;
 
+    return true;
+}
+
+bool SocketUDP::Resolve(const std::string& hostname, uint16_t port, RemoteAddress& output) {
+    // pick the desired IP version
+    const auto protocol = GetAsioProtocol();
+
+    // perform hostname resolution
+    asio::error_code ec;
+    udp::resolver resolver(m_context);
+    udp::resolver::iterator it = resolver.resolve(protocol, hostname, std::to_string(port), ec);
+
+    // socket error?
+    if (ec)
+        return false;
+    // no results?
+    if (it == udp::resolver::iterator() /* end */)
+        return false;
+
+    output.endpoint_udp = *it; // assume first entry is ok, for simplicity
     return true;
 }
 
@@ -169,6 +173,10 @@ bool SocketUDP::IsWritePending() const {
 
 Socket::SocketState SocketUDP::GetState() const {
     return m_state;
+}
+
+SocketProtocol SocketUDP::GetProtocol() const {
+    return m_family;
 }
 
 bool SocketUDP::IsOpenAndReady() const {

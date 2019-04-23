@@ -35,12 +35,14 @@ namespace wirefox {
             void                    Disconnect() override;
             void                    Unbind() override;
             bool                    Bind(SocketProtocol family, unsigned short port) override;
+            bool                    Resolve(const std::string& hostname, uint16_t port, RemoteAddress& output) override;
             void                    BeginWrite(const RemoteAddress& addr, const uint8_t* data, size_t datalen, SocketWriteCallback_t callback) override;
             void                    BeginRead(SocketReadCallback_t callback) override;
             bool                    IsReadPending() const override;
             bool                    IsWritePending() const override;
 
             SocketState             GetState() const override;
+            SocketProtocol          GetProtocol() const override;
 
             bool                    IsOpenAndReady() const override;
 
