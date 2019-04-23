@@ -117,6 +117,8 @@ namespace wirefox {
         DISCONNECT_REQUEST,
         /// \internal Confirms that the connection is now closed.
         DISCONNECT_ACK,
+        /// \internal Incoming system ad.
+        ADVERTISEMENT,
 
         // ----- USER - These may be returned through Peer::Receive() ----- //
 
@@ -143,6 +145,11 @@ namespace wirefox {
         ///     (4 bytes) PacketID, the ID for which a receipt was requested with PacketOptions::WITH_RECEIPT.
         ///     Note that delivery failure for reliable packets will cause the connection to be closed.
         NOTIFY_RECEIPT_LOST,
+
+        /// Incoming system advert, sent in response to a PingLocalNetwork() call.
+        ///     Payload begins with a string describing the sender's identity. Parse using BinaryStream::ReadString().
+        ///     The rest of the payload is user-defined (the contents of the advertisement).
+        NOTIFY_ADVERTISEMENT,
 
         /// \internal Placeholder for the first user packet.
         USER_PACKET

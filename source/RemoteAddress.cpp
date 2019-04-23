@@ -21,6 +21,6 @@ bool RemoteAddress::operator!=(const RemoteAddress& rhs) const {
 
 std::string RemoteAddress::ToString() const {
     std::stringstream txt;
-    txt << endpoint_udp;
+    txt << endpoint_udp.address().to_string();
     return txt.str();
 }

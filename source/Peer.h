@@ -189,9 +189,10 @@ namespace wirefox {
             RemotePeer*                 GetNextAvailableConnectSlot() const;
             RemotePeer*                 GetNextAvailableIncomingSlot() const;
 
-            PeerID      m_id;
-            size_t      m_remotesMax;
-            size_t      m_remotesIncoming;
+            PeerID m_id;
+            size_t m_remotesMax;
+            size_t m_remotesIncoming;
+            BinaryStream m_advertisement;
 
 #if WIREFOX_ENABLE_NETWORK_SIM
             float                       m_simLossRate {0};

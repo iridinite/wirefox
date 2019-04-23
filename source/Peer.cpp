@@ -25,6 +25,7 @@ Peer::Peer(size_t maxPeers)
     : m_id(GeneratePeerID())
     , m_remotesMax(maxPeers + 1)
     , m_remotesIncoming(0)
+    , m_advertisement(0)
     , m_masterSocket(cfg::DefaultSocket::Create())
     , m_remotes(std::unique_ptr<RemotePeer[]>(new RemotePeer[m_remotesMax]))
     , m_queue(std::make_shared<PacketQueue>(this))
@@ -116,7 +117,7 @@ void Peer::Disconnect(PeerID who, Timespan linger) {
     // send out a request to disconnect
     Packet request(PacketCommand::DISCONNECT_REQUEST, nullptr, 0);
     m_queue->EnqueueOutgoing(request, remote, PacketOptions::RELIABLE, PacketPriority::CRITICAL, Channel());
-    
+
     // this prevents further packets from being queued
     remote->disconnect = Time::Now() + linger;
 }
@@ -197,12 +198,12 @@ std::unique_ptr<Packet> Peer::Receive() {
     return m_queue->DequeueIncoming();
 }
 
-void Peer::SetOfflineAdvertisement(const BinaryStream&) {
-    
+void Peer::SetOfflineAdvertisement(const BinaryStream& data) {
+    m_advertisement = data;
 }
 
 void Peer::DisableOfflineAdvertisement() {
-    
+    m_advertisement.Reset();
 }
 
 Channel Peer::MakeChannel(ChannelMode mode) {
@@ -315,9 +316,16 @@ void Peer::OnUnconnectedMessage(const RemoteAddress& addr, BinaryStream& instrea
 
     Packet packet = Packet::FromDatagram(0, instream, header.length);
     switch (packet.GetCommand()) {
-    case PacketCommand::PING:
-        // TODO
+    case PacketCommand::PING: {
+        // check if we have an advert configured, otherwise ignore the ping
+        if (m_advertisement.IsEmpty()) break;
+
+        // send back our ad
+        Packet pong(PacketCommand::ADVERTISEMENT, m_advertisement);
+        SendOutOfBand(pong, addr);
+
         break;
+    }
     case PacketCommand::CONNECT_ATTEMPT: {
         // this is part of a connection setup
 
@@ -348,6 +356,20 @@ void Peer::OnUnconnectedMessage(const RemoteAddress& addr, BinaryStream& instrea
 
         // finish the disconnect locally as well
         DisconnectImmediate(remote);
+
+        break;
+    }
+    case PacketCommand::ADVERTISEMENT: {
+        // copy the advert into a new buffer, and prefix it with the sender's IP address
+        std::string address = addr.ToString();
+        BinaryStream original = packet.GetStream();
+        BinaryStream prefixed(original.GetLength() + address.size() + sizeof(int));
+        prefixed.WriteString(address);
+        prefixed.WriteBytes(original);
+
+        // send this notification to the local peer
+        Packet notification(PacketCommand::NOTIFY_ADVERTISEMENT, std::move(prefixed));
+        m_queue->EnqueueLoopback(notification);
 
         break;
     }
