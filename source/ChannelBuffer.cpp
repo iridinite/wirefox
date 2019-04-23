@@ -19,6 +19,11 @@ namespace {
         return lhs != rhs && rhs - lhs < halfSpan;
     }
 
+    constexpr bool SequenceGreaterThanOrEqual(SequenceID lhs, SequenceID rhs) {
+        constexpr auto halfSpan = static_cast<decltype(lhs)>(std::numeric_limits<decltype(lhs)>::max()) / 2;
+        return lhs == rhs || rhs - lhs > halfSpan;
+    }
+
 }
 
 ChannelBuffer::ChannelBuffer(const IPeer* peer, ChannelIndex index)
@@ -51,15 +56,15 @@ ChannelBuffer::Payload ChannelBuffer::Dequeue() {
 
     // copy out the Payload object, erase the entry, and return it
     auto payload = std::move(it->second);
+    m_nextDequeue = it->first + 1;
     m_backlog.erase(it);
-    m_nextDequeue++;
     return payload;
 }
 
 bool ChannelBuffer::IsEligible(SequenceID sequence) const {
     if (GetMode() == ChannelMode::ORDERED) {
-        // for ordered, must be exactly the next expected entry in the sequence
-        return m_nextDequeue == sequence;
+        // for ordered, cannot exceed the next expected entry in the sequence
+        return SequenceGreaterThanOrEqual(m_nextDequeue, sequence);
     }
 
     // sequence is always eligible, because out-of-order packets were already discarded in Enqueue
