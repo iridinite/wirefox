@@ -25,10 +25,10 @@ namespace {
 }
 
 RemotePeer::RemotePeer()
-    : reserved(false)
-    , active(false)
+    : id(0)
     , disconnect(0)
-    , id(0) {}
+    , reserved(false)
+    , active(false) {}
 
 bool RemotePeer::IsConnected() const {
     return active && handshake != nullptr && handshake->GetResult() == ConnectResult::OK;
