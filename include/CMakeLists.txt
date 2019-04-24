@@ -1,21 +1,22 @@
+set(thisfolder ${CMAKE_CURRENT_SOURCE_DIR})
+
 target_sources(Wirefox
   PRIVATE
-    Wirefox.h
-    wirefox/WirefoxConfig.h
-    wirefox/WirefoxCBindings.h
-	wirefox/WirefoxTime.h
-    wirefox/BinaryStream.h
-    wirefox/Channel.h
-    wirefox/Enumerations.h
-    wirefox/Factory.h
-    wirefox/Packet.h
-    wirefox/PeerAbstract.h
-    wirefox/Serializable.h
+    ${thisfolder}/Wirefox.h
+    ${thisfolder}/wirefox/WirefoxConfig.h
+    ${thisfolder}/wirefox/WirefoxCBindings.h
+    ${thisfolder}/wirefox/WirefoxTime.h
+    ${thisfolder}/wirefox/BinaryStream.h
+    ${thisfolder}/wirefox/Channel.h
+    ${thisfolder}/wirefox/Enumerations.h
+    ${thisfolder}/wirefox/Factory.h
+    ${thisfolder}/wirefox/Packet.h
+    ${thisfolder}/wirefox/PeerAbstract.h
+    ${thisfolder}/wirefox/Serializable.h
 )
 target_include_directories(Wirefox
   PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${thisfolder}
   PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/wirefox
-    ${CMAKE_SOURCE_DIR}/external/asio/include
+    ${thisfolder}/wirefox
 )
