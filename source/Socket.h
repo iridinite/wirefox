@@ -52,6 +52,13 @@ namespace wirefox {
             virtual SocketState GetState() const = 0;
 
             /**
+             * \brief Returns the socket family that was set by Bind().
+             * 
+             * If Bind() was never called, the value returned by this function is undefined.
+             */
+            virtual SocketProtocol GetProtocol() const = 0;
+
+            /**
              * \brief Try connecting to a remote host.
              * 
              * This function attempts to open the socket for the specified remote host. If the attempt was successfully started, the
@@ -92,6 +99,17 @@ namespace wirefox {
              * For TCP, this means the socket can listen to, and accept, incoming connection requests.
              */
             virtual bool Bind(SocketProtocol family, unsigned short port) = 0;
+
+            /**
+             * \brief Resolve a hostname into a RemoteAddress.
+             * 
+             * \param[in]   hostname    The hostname, or IP address, to resolve to a socket address.
+             * \param[in]   port        The network port on which the remote host is expected to listen.
+             * \param[out]  output      The RemoteAddress object to which the output will be written.
+             * 
+             * \returns True on success, false on failure (hostname not recognized, or misformatted)
+             */
+            virtual bool Resolve(const std::string& hostname, uint16_t port, RemoteAddress& output) = 0;
 
             /**
              * \brief Send data to a remote endpoint.

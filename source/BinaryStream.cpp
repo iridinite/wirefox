@@ -201,7 +201,7 @@ void BinaryStream::WriteByte(const uint8_t val) {
 }
 
 void BinaryStream::WriteBytes(const BinaryStream& other) {
-    WriteBytes(other.m_buffer, other.m_length);
+    WriteBytes(other.m_buffer_ro, other.m_length);
 }
 
 void BinaryStream::WriteBytes(const void* addr, const size_t len) {

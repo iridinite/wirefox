@@ -35,12 +35,14 @@ namespace wirefox {
             void                    Disconnect() override;
             void                    Unbind() override;
             bool                    Bind(SocketProtocol family, unsigned short port) override;
+            bool                    Resolve(const std::string& hostname, uint16_t port, RemoteAddress& output) override;
             void                    BeginWrite(const RemoteAddress& addr, const uint8_t* data, size_t datalen, SocketWriteCallback_t callback) override;
             void                    BeginRead(SocketReadCallback_t callback) override;
             bool                    IsReadPending() const override;
             bool                    IsWritePending() const override;
 
             SocketState             GetState() const override;
+            SocketProtocol          GetProtocol() const override;
 
             bool                    IsOpenAndReady() const override;
 
@@ -60,10 +62,6 @@ namespace wirefox {
 
             uint8_t                 m_readbuf[cfg::PACKETQUEUE_IN_LEN];
             asio::ip::udp::endpoint m_readsender;
-
-#ifdef WIREFOX_ENABLE_SOCKET_LOCK
-            LockableMutex           m_lock;
-#endif
         };
 
         /// \endcond

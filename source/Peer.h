@@ -64,6 +64,11 @@ namespace wirefox {
             void                        SendLoopback(const Packet& packet) override;
             std::unique_ptr<Packet>     Receive() override;
 
+            void                        SetOfflineAdvertisement(const BinaryStream& data) override;
+            void                        DisableOfflineAdvertisement() override;
+            void                        Ping(const std::string& hostname, uint16_t port) const override;
+            void                        PingLocalNetwork(uint16_t port) const override;
+
             /**
              * \brief Sends an unconnected packet to an arbitrary remote endpoint.
              * 
@@ -184,9 +189,10 @@ namespace wirefox {
             RemotePeer*                 GetNextAvailableConnectSlot() const;
             RemotePeer*                 GetNextAvailableIncomingSlot() const;
 
-            PeerID      m_id;
-            size_t      m_remotesMax;
-            size_t      m_remotesIncoming;
+            PeerID m_id;
+            size_t m_remotesMax;
+            size_t m_remotesIncoming;
+            BinaryStream m_advertisement;
 
 #if WIREFOX_ENABLE_NETWORK_SIM
             float                       m_simLossRate {0};

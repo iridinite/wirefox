@@ -28,7 +28,7 @@ namespace wirefox {
             /// Inequality operator.
             bool operator!=(const RemoteAddress& rhs) const;
 
-            /// Returns a string that describes this RemoteAddress. Meant for debugging.
+            /// Returns a string version of this address' hostname or IP address.
             std::string ToString() const;
 
         private:
