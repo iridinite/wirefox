@@ -27,7 +27,7 @@ Planned features:
 - Operating system support for BSD sockets interface
   (Windows, Linux, most newer game consoles)
 - A C++14-compliant compiler, or newer
-- CMake 3.13 or higher
+- CMake 3.9 or higher
 
 ### Windows
 
