@@ -10,8 +10,8 @@
 
 if(WIN32)
   include(${CMAKE_SOURCE_DIR}/cmake/Platform/Windows.cmake)
-#elseif(UNIX)
-#  include(${CMAKE_SOURCE_DIR}/cmake/Platform/Linux.cmake)
+else()
+  include(${CMAKE_SOURCE_DIR}/cmake/Platform/Linux.cmake)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
