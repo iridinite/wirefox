@@ -17,6 +17,7 @@ target_sources(Wirefox
     ${thisfolder}/DatagramHeader.cpp
     ${thisfolder}/DatagramHeader.h
     ${thisfolder}/EncryptionLayer.h
+    ${thisfolder}/EncryptionLayerNull.h
     ${thisfolder}/EncryptionLayerSodium.cpp
     ${thisfolder}/EncryptionLayerSodium.h
     ${thisfolder}/Handshaker.cpp

@@ -20,6 +20,8 @@ namespace wirefox {
         class CongestionControlWindow;
         class HandshakerThreeWay;
         class SocketUDP;
+        class EncryptionLayerSodium;
+        class EncryptionLayerNull;
     }
 
     /// Represents a unique identifier for a packet. This is used for tracking which packets are associated with which datagrams.
@@ -50,6 +52,14 @@ namespace wirefox {
 
         /// The Handshaker implementation to use. Changing this lets you easily swap out implementations.
         using DefaultCongestionControl = detail::CongestionControlWindow;
+
+#ifdef WIREFOX_ENABLE_ENCRYPTION
+        /// The EncryptionLayer implementation to use. Changing this lets you easily swap out implementations.
+        using DefaultEncryption = detail::EncryptionLayerSodium;
+#else
+        /// The EncryptionLayer implementation to use. This is a dummy implementation that does nothing.
+        using DefaultEncryption = detail::EncryptionLayerNull;
+#endif
 
         /// Specifies a header that Handshaker should send (and receive), to confirm that both endpoints are running Wirefox.
         constexpr static uint8_t WIREFOX_MAGIC[] = {'W', 'I', 'R', 'E', 'F', 'O', 'X'};

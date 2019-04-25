@@ -29,3 +29,10 @@
 
 // DefaultCongestionControl
 #include "CongestionControlWindow.h"
+
+// DefaultEncryption
+#ifdef WIREFOX_ENABLE_ENCRYPTION
+#include "EncryptionLayerSodium.h"
+#else
+#include "EncryptionLayerNull.h"
+#endif
