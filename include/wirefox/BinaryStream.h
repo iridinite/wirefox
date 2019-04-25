@@ -114,6 +114,9 @@ namespace wirefox {
         /// Gets the internal buffer.
         const uint8_t*  GetBuffer() const noexcept { return m_buffer_ro; }
 
+        /// Gets the internal buffer. Use this at your own peril.
+        uint8_t*        GetWritableBuffer() const noexcept { return m_buffer; }
+
         /**
          * \brief Yield ownership of the internal buffer.
          * 
@@ -199,6 +202,16 @@ namespace wirefox {
          * \param[in]   other   The BinaryStream whose contents to copy.
          */
         void            WriteBytes(const BinaryStream& other);
+
+        /**
+         * \brief Write a series of zero bytes to the stream.
+         * 
+         * This is meant for advanced / internal use cases, where a BinaryStream is used to preallocate a chunk of memory,
+         * which is directly written to by another object.
+         * 
+         * \param[in]   len     The number of zero bytes to write.
+         */
+        void            WriteZeroes(size_t len);
 
         /**
          * \brief Writes an array of bytes to the stream.

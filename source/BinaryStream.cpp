@@ -194,8 +194,8 @@ void BinaryStream::Write(ISerializable& obj) {
 
 void BinaryStream::WriteByte(const uint8_t val) {
     if (m_readonly) return;
-    Ensure(1);
     Align();
+    Ensure(1);
     m_buffer[m_position++] = val;
     m_length = std::max(m_length, m_position);
 }
@@ -204,10 +204,19 @@ void BinaryStream::WriteBytes(const BinaryStream& other) {
     WriteBytes(other.m_buffer_ro, other.m_length);
 }
 
+void BinaryStream::WriteZeroes(size_t len) {
+    if (m_readonly) return;
+    Align();
+    Ensure(len);
+    memset(m_buffer + m_position, 0, len);
+    m_position += len;
+    m_length = std::max(m_length, m_position);
+}
+
 void BinaryStream::WriteBytes(const void* addr, const size_t len) {
     if (m_readonly) return;
-    Ensure(len);
     Align();
+    Ensure(len);
     memcpy(m_buffer + m_position, addr, len);
     m_position += len;
     m_length = std::max(m_length, m_position);
