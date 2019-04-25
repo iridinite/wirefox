@@ -17,7 +17,7 @@ script:
   # -- Run CMake --
   - mkdir build
   - cd build
-  - cmake ../ -DENABLE_ENCRYPTION=1 -sodium_USE_STATIC_LIBS=1 -DWARNINGS_PEDANTIC=1 -DWARNINGS_AS_ERRORS=1 -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=1
+  - cmake ../ -DENABLE_ENCRYPTION=1 -Dsodium_USE_STATIC_LIBS=1 -DWARNINGS_PEDANTIC=1 -DWARNINGS_AS_ERRORS=1 -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=1
   # -- Compile --
   - $CXX --version
   - make -j 4 -k
