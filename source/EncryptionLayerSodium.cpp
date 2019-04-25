@@ -107,12 +107,11 @@ BinaryStream EncryptionLayerSodium::Decrypt(BinaryStream& ciphertext) {
     ciphertext.SeekToBegin();
     ciphertext.ReadBytes(nonce, sizeof nonce);
 
+    assert(static_cast<int>(ciphertext.GetLength()) - crypto_secretbox_MACBYTES - crypto_secretbox_NONCEBYTES >= 0);
     const size_t plaintext_len = ciphertext.GetLength() - crypto_secretbox_MACBYTES - crypto_secretbox_NONCEBYTES;
     const size_t ciphertext_len = ciphertext.GetLength() - crypto_secretbox_NONCEBYTES;
-    assert(plaintext_len >= 0);
 
     BinaryStream plaintext = PreallocateBuffer(plaintext_len);
-
     if (crypto_secretbox_open_easy(plaintext.GetWritableBuffer(), ciphertext.GetBuffer() + crypto_secretbox_NONCEBYTES, ciphertext_len, nonce, m_key_rx) != 0)
         m_error = true;
 
