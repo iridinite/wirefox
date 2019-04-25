@@ -9,7 +9,7 @@ compiler:
 addons:
   apt:
     sources:
-    - sourceline: 'ppa:chris-lea/libsodium'
+    - sourceline: 'deb http://archive.ubuntu.com/ubuntu disco main'
     packages:
     - libsodium-dev
 
