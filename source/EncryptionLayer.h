@@ -26,6 +26,12 @@ namespace wirefox {
          */
         class EncryptionLayer {
         public:
+            /// Represents an abstract public/private keypair.
+            class Keypair {
+            protected:
+                Keypair() = default;
+            };
+
             /// Default constructor
             EncryptionLayer() = default;
             /// Copy constructor
@@ -51,11 +57,6 @@ namespace wirefox {
             virtual bool GetNeedsToBail() const = 0;
 
             /**
-             * \brief Returns the maximum amount of overhead added to a plaintext, in bytes.
-             */
-            virtual size_t GetOverhead() const = 0;
-
-            /**
              * \brief Returns a key belonging to this peer for use in key exchange algorithms.
              * 
              * As part of a key exchange, this piece of data should be sent to the other party.
@@ -72,6 +73,8 @@ namespace wirefox {
              * \param[in]   pubkey      The public key of the remote endpoint.
              */
             virtual void SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) = 0;
+
+            virtual void SetLocalKeypair(std::shared_ptr<Keypair> keypair) = 0;
 
             /**
              * \brief Encrypts a piece of data into a ciphertext.

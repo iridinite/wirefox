@@ -20,7 +20,23 @@ namespace wirefox {
          * \brief Represents a cryptography layer implemented using libsodium.
          */
         class EncryptionLayerSodium : public EncryptionLayer {
+            static constexpr size_t KEY_LENGTH = 32;
+
         public:
+            /// Represents a public/private keypair suitable for use with libsodium's key exchange.
+            class Keypair : public EncryptionLayer::Keypair {
+            public:
+                /// Default constructor, initializes a new keypair.
+                Keypair();
+                /// Constructor that copies preset keys.
+                Keypair(const uint8_t* key_secret, const uint8_t* key_public);
+                /// Destructor, securely erases the keypair from memory.
+                ~Keypair();
+
+                uint8_t key_public[KEY_LENGTH];
+                uint8_t key_secret[KEY_LENGTH];
+            };
+
             EncryptionLayerSodium();
             EncryptionLayerSodium(const EncryptionLayerSodium&) = delete;
             EncryptionLayerSodium(EncryptionLayerSodium&&) noexcept;
@@ -30,21 +46,27 @@ namespace wirefox {
             EncryptionLayerSodium& operator=(EncryptionLayerSodium&&) noexcept;
 
             bool GetNeedsToBail() const override;
-            size_t GetOverhead() const override;
 
             BinaryStream GetPublicKey() const override;
             void SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) override;
+            void SetLocalKeypair(std::shared_ptr<EncryptionLayer::Keypair> keypair) override;
 
             BinaryStream Encrypt(const BinaryStream& plaintext) override;
             BinaryStream Decrypt(BinaryStream& ciphertext) override;
 
-        private:
-            static constexpr size_t KEY_LENGTH = 32;
+            /**
+             * \brief Returns the maximum amount of overhead added to a plaintext, in bytes.
+             */
+            static size_t GetOverhead();
 
-            /// Key exchange key, secret part.
-            uint8_t m_kx_secret[KEY_LENGTH];
-            /// Key exchange key, public part.
-            uint8_t m_kx_public[KEY_LENGTH];
+            /**
+             * \brief Returns the length of the private or public key, in bytes.
+             */
+            static size_t GetKeyLength();
+
+        private:
+            /// A handle to the local peer's keypair.
+            std::shared_ptr<Keypair> m_kx;
 
             /// Session key for decrypting received messages.
             uint8_t m_key_rx[KEY_LENGTH];

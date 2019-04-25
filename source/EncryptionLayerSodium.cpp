@@ -7,7 +7,7 @@
 using namespace detail;
 
 namespace {
-    
+
     BinaryStream PreallocateBuffer(const size_t len) {
         BinaryStream buffer(len);
         buffer.WriteZeroes(len); // advance length counter
@@ -16,10 +16,29 @@ namespace {
 
 }
 
+EncryptionLayerSodium::Keypair::Keypair()
+    : key_public{}
+    , key_secret{} {
+    if (sodium_init() < 0)
+        throw std::runtime_error("libsodium failed to init");
+
+    crypto_kx_keypair(key_public, key_secret);
+}
+
+EncryptionLayerSodium::Keypair::Keypair(const uint8_t* key_secret, const uint8_t* key_public)
+    : key_public{}
+    , key_secret{} {
+    memcpy(this->key_secret, key_secret, KEY_LENGTH);
+    memcpy(this->key_public, key_public, KEY_LENGTH);
+}
+
+EncryptionLayerSodium::Keypair::~Keypair() {
+    sodium_memzero(key_public, KEY_LENGTH);
+    sodium_memzero(key_secret, KEY_LENGTH);
+}
+
 EncryptionLayerSodium::EncryptionLayerSodium()
-    : m_kx_secret{}
-    , m_kx_public{}
-    , m_key_rx{}
+    : m_key_rx{}
     , m_key_tx{}
     , m_error(false) {
     // asserts done here to make sure the key array sizes match up with what libsodium expects;
@@ -30,8 +49,6 @@ EncryptionLayerSodium::EncryptionLayerSodium()
 
     if (sodium_init() < 0)
         throw std::runtime_error("libsodium failed to init");
-
-    crypto_kx_keypair(m_kx_public, m_kx_secret);
 }
 
 EncryptionLayerSodium::EncryptionLayerSodium(EncryptionLayerSodium&&) noexcept
@@ -39,8 +56,6 @@ EncryptionLayerSodium::EncryptionLayerSodium(EncryptionLayerSodium&&) noexcept
 
 EncryptionLayerSodium::~EncryptionLayerSodium() {
     // securely erase all keys from memory
-    sodium_memzero(m_kx_secret, KEY_LENGTH);
-    sodium_memzero(m_kx_public, KEY_LENGTH);
     sodium_memzero(m_key_rx, KEY_LENGTH);
     sodium_memzero(m_key_tx, KEY_LENGTH);
 }
@@ -53,13 +68,17 @@ bool EncryptionLayerSodium::GetNeedsToBail() const {
     return m_error;
 }
 
-size_t EncryptionLayerSodium::GetOverhead() const {
+size_t EncryptionLayerSodium::GetOverhead() {
     return crypto_secretbox_MACBYTES + crypto_secretbox_NONCEBYTES;
+}
+
+size_t EncryptionLayerSodium::GetKeyLength() {
+    return KEY_LENGTH;
 }
 
 BinaryStream EncryptionLayerSodium::GetPublicKey() const {
     BinaryStream ret(KEY_LENGTH);
-    ret.WriteBytes(m_kx_public, KEY_LENGTH);
+    ret.WriteBytes(m_kx->key_public, KEY_LENGTH);
     ret.SeekToBegin();
     return ret;
 }
@@ -70,17 +89,21 @@ void EncryptionLayerSodium::SetRemotePublicKey(Handshaker::Origin origin, Binary
 
     switch (origin) {
     case Handshaker::Origin::SELF:
-        if (crypto_kx_client_session_keys(m_key_rx, m_key_tx, m_kx_public, m_kx_secret, remotekey) != 0)
+        if (crypto_kx_client_session_keys(m_key_rx, m_key_tx, m_kx->key_public, m_kx->key_secret, remotekey) != 0)
             m_error = true;
         break;
     case Handshaker::Origin::REMOTE:
-        if (crypto_kx_server_session_keys(m_key_rx, m_key_tx, m_kx_public, m_kx_secret, remotekey) != 0)
+        if (crypto_kx_server_session_keys(m_key_rx, m_key_tx, m_kx->key_public, m_kx->key_secret, remotekey) != 0)
             m_error = true;
         break;
     default:
         assert(false && "invalid Handshaker::Origin in EncryptionLayerSodium::SetRemotePublicKey");
         break;
     }
+}
+
+void EncryptionLayerSodium::SetLocalKeypair(std::shared_ptr<EncryptionLayer::Keypair> keypair) {
+    m_kx = std::static_pointer_cast<EncryptionLayerSodium::Keypair>(keypair);
 }
 
 BinaryStream EncryptionLayerSodium::Encrypt(const BinaryStream& plaintext) {
