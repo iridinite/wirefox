@@ -10,15 +10,16 @@ configuration:
 
 install:
   # install libsodium
-- cmd: >-
-    if not exist deps\ (
-        mkdir deps && cd deps
-        appveyor-retry appveyor DownloadFile https://download.libsodium.org/libsodium/releases/libsodium-1.0.17-stable-msvc.zip -FileName libsodium.zip
-        7z x libsodium.zip -olibsodium
-        del /F libsodium.zip
-        set sodium_DIR=%APPVEYOR_BUILD_FOLDER%\deps\libsodium
-        cd ..
-        )
+- ps: >-
+    if(!(Test-Path -Path "deps")){
+    mkdir deps
+    cd deps
+    appveyor-retry appveyor DownloadFile https://download.libsodium.org/libsodium/releases/libsodium-1.0.17-stable-msvc.zip -FileName libsodium.zip
+    7z x libsodium.zip -olibsodium
+    del libsodium.zip
+    cd ..
+    }
+- cmd: set sodium_DIR=%APPVEYOR_BUILD_FOLDER%\deps\libsodium
 
 cache:
   # preserve deps folder, but clear if this script changes
