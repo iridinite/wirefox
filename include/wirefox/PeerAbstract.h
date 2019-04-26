@@ -66,8 +66,9 @@ namespace wirefox {
          * 
          * \param[in]   host    A hostname, domain name, or IP address, you wish to connect to.
          * \param[in]   port    The port on which to connect. The remote host must be listening on this port.
+         * \param[in]   public_key  The expected public key of the remote end. Set to nullptr if this is unknown.
          */
-        virtual ConnectAttemptResult    Connect(const std::string& host, uint16_t port) = 0;
+        virtual ConnectAttemptResult    Connect(const std::string& host, uint16_t port, const uint8_t* public_key = nullptr) = 0;
 
         /**
          * \brief Bind this peer to a local network interface.
@@ -200,6 +201,45 @@ namespace wirefox {
          * \param[in]   port        The port on which the remote endpoints are expected to listen.
          */
         virtual void                    PingLocalNetwork(uint16_t port) const = 0;
+
+        /**
+         * \brief Sets whether connection encryption is enabled.
+         * 
+         * This must be set \b before Bind() is called. If this peer is already bound, this function does nothing.
+         * Encryption is disabled by default, unless this is called with \p enabled set to true.
+         * 
+         * \param[in]   enabled     Whether to enable or disable cryptography.
+         */
+        virtual void                    SetEncryptionEnabled(bool enabled) = 0;
+
+        /**
+         * \brief Restore a keypair that was previously generated using GenerateKeypair().
+         * 
+         * Normally, you do not need to use this function. When you enable encryption, a random keypair will be
+         * automatically generated for you. This method is meant only to be used for dedicated servers you control.
+         * 
+         * \param[in]   key_secret      A pointer to the private key.
+         * \param[in]   key_public      A pointer to the public key.
+         */
+        virtual void                    SetEncryptionLocalKeypair(const uint8_t* key_secret, const uint8_t* key_public) = 0;
+
+        /**
+         * \brief Generate a keypair, which you can store for later use.
+         * 
+         * You do not need to call this, unless you're hosting a dedicated server whose public key will be shipped
+         * together with the clients. In such a case, use this function to generate that persistent keypair.
+         * 
+         * Both pointers must reference a block of memory that is at least GetEncryptionKeyLength() bytes long.
+         * 
+         * \param[out]  key_secret      Output array to contain the private key.
+         * \param[out]  key_public      Output array to contain the public key.
+         */
+        virtual void                    GenerateKeypair(uint8_t* key_secret, uint8_t* key_public) const = 0;
+
+        /**
+         * \brief Gets the expected length of all encryption keys, in bytes.
+         */
+        virtual size_t                  GetEncryptionKeyLength() const = 0;
 
         /**
          * \brief Registers and returns a new Channel for your packets.

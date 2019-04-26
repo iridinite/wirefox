@@ -13,6 +13,7 @@
 #include "CongestionControl.h"
 #include "ChannelBuffer.h"
 #include "ReceiptTracker.h"
+#include "EncryptionLayer.h"
 
 namespace wirefox {
 
@@ -52,6 +53,9 @@ namespace wirefox {
 
             /// A handle to an object that services requests for delivery receipts.
             std::unique_ptr<ReceiptTracker> receipt;
+
+            /// A handle to a cryptographic utility class.
+            std::unique_ptr<EncryptionLayer> crypto;
 
             /// The unique ID number of this remote endpoint. May be zero if handshake incomplete.
             PeerID id;
