@@ -6,8 +6,10 @@ ChatServer::ChatServer(unsigned short port)
 
     m_peer = wirefox::IPeer::Factory::Create(maxClients);
     m_peer->SetMaximumIncomingPeers(maxClients);
-    m_peer->Bind(wirefox::SocketProtocol::IPv4, port);
     m_peer->SetNetworkSimulation(0.1f, 5);
+    m_peer->SetEncryptionEnabled(true);
+    m_peer->SetEncryptionLocalKeypair(SERVER_KEY_SECRET, SERVER_KEY_PUBLIC);
+    m_peer->Bind(wirefox::SocketProtocol::IPv4, port);
 
     m_channelChat = m_peer->MakeChannel(wirefox::ChannelMode::ORDERED);
 }
