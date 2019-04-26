@@ -178,8 +178,15 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     if (!datagram) return;
 
     // encrypt this datagram if that's enabled
-    if (!remote.IsOutOfBand() && m_peer->GetEncryptionEnabled())
+    if (!remote.IsOutOfBand() && m_peer->GetEncryptionEnabled()) {
         datagram->blob = remote.crypto->Encrypt(datagram->blob);
+
+        // I don't know why this would happen, but I guess encryption could fail?
+        if (remote.crypto->GetNeedsToBail()) {
+            m_peer->DisconnectImmediate(&remote);
+            return;
+        }
+    }
 
     // dispatch an async write op for this remote
     remote.congestion->NotifySendingBytes(datagram->id, datagram->blob.GetLength());
@@ -217,6 +224,12 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
     // if we know the remote, then the message may be encrypted
     if (remote->IsConnected() && m_peer->GetEncryptionEnabled()) {
         inbuffer = remote->crypto->Decrypt(inbuffer);
+
+        // the ciphertext might be malformed for several reasons; decryption failure == bad connection
+        if (remote->crypto->GetNeedsToBail()) {
+            m_peer->DisconnectImmediate(remote);
+            return;
+        }
     }
 
     // decode the datagram header if it is complete
