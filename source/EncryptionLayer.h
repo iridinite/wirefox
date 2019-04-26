@@ -71,10 +71,28 @@ namespace wirefox {
              * 
              * \param[in]   origin      Specifies which endpoint initiated the connection.
              * \param[in]   pubkey      The public key of the remote endpoint.
+             * 
+             * \returns False if the key is incorrect/suspicious, e.g. if it mismatches the key set by
+             * ExpectRemotePublicKey(). Otherwise, returns true.
              */
-            virtual void SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) = 0;
+            virtual bool SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) = 0;
 
+            /**
+             * \brief Sets the keypair that represents the local peer.
+             * 
+             * \param[in]   keypair     A reference to the keypair shared by all remotes on this local peer.
+             */
             virtual void SetLocalKeypair(std::shared_ptr<Keypair> keypair) = 0;
+
+            /**
+             * \brief Informs the crypto layer that this specific public key is expected.
+             * 
+             * This is meant to be used for dedicated server scenarios, where a secure, authorative server can
+             * have a keypair whose public key ships with the client software.
+             * 
+             * \param[in]   pubkey      A stream that contains the remote endpoint's public key.
+             */
+            virtual void ExpectRemotePublicKey(BinaryStream& pubkey) = 0;
 
             /**
              * \brief Encrypts a piece of data into a ciphertext.

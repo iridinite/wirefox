@@ -75,11 +75,20 @@ Peer& Peer::operator=(Peer&& other) noexcept {
     return *this;
 }
 
-ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const uint8_t* /*public_key*/) {
+ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const uint8_t* public_key) {
     auto* slot = GetNextAvailableConnectSlot();
     if (!slot) return ConnectAttemptResult::NO_FREE_SLOTS;
 
     slot->Setup(this, Handshaker::Origin::SELF);
+
+    if (public_key) {
+        // cannot specify public key while also having crypto disabled, that's silly
+        if (!GetEncryptionEnabled()) return ConnectAttemptResult::INVALID_PARAMETER;
+
+        // tell this remote's crypto layer to expect this exact public key
+        BinaryStream public_key_stream(public_key, cfg::DefaultEncryption::GetKeyLength(), BinaryStream::WrapMode::READONLY);
+        slot->crypto->ExpectRemotePublicKey(public_key_stream);
+    }
 
     auto ret = m_masterSocket->Connect(host, port, [this, slot](bool error, RemoteAddress addr, std::shared_ptr<Socket> socket, std::string) {
         if (error) {

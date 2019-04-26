@@ -48,8 +48,9 @@ namespace wirefox {
             bool GetNeedsToBail() const override;
 
             BinaryStream GetPublicKey() const override;
-            void SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) override;
+            bool SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) override;
             void SetLocalKeypair(std::shared_ptr<EncryptionLayer::Keypair> keypair) override;
+            void ExpectRemotePublicKey(BinaryStream& pubkey) override;
 
             BinaryStream Encrypt(const BinaryStream& plaintext) override;
             BinaryStream Decrypt(BinaryStream& ciphertext) override;
@@ -68,12 +69,16 @@ namespace wirefox {
             /// A handle to the local peer's keypair.
             std::shared_ptr<Keypair> m_kx;
 
+            /// The remote public key, if known beforehand.
+            uint8_t m_key_expect_pub[KEY_LENGTH];
+
             /// Session key for decrypting received messages.
             uint8_t m_key_rx[KEY_LENGTH];
             /// Session key for encrypting outgoing messages.
             uint8_t m_key_tx[KEY_LENGTH];
 
             bool m_error;
+            bool m_knowsRemotePubkey;
         };
 
         /// \endcond

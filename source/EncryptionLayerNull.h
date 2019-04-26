@@ -30,7 +30,8 @@ namespace wirefox {
             bool GetNeedsToBail() const override { return false; };
 
             BinaryStream GetPublicKey() const override { return BinaryStream(0); }
-            void SetRemotePublicKey(Handshaker::Origin, BinaryStream&) override {}
+            bool SetRemotePublicKey(Handshaker::Origin, BinaryStream&) override { return true; }
+            void ExpectRemotePublicKey(BinaryStream&) override {}
 
             BinaryStream Encrypt(const BinaryStream& plaintext) override { return plaintext; }
             BinaryStream Decrypt(BinaryStream& ciphertext) override { return ciphertext; }

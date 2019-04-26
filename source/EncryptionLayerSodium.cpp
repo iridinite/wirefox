@@ -11,6 +11,7 @@ namespace {
     BinaryStream PreallocateBuffer(const size_t len) {
         BinaryStream buffer(len);
         buffer.WriteZeroes(len); // advance length counter
+        buffer.SeekToBegin();
         return buffer;
     }
 
@@ -38,9 +39,11 @@ EncryptionLayerSodium::Keypair::~Keypair() {
 }
 
 EncryptionLayerSodium::EncryptionLayerSodium()
-    : m_key_rx{}
+    : m_key_expect_pub{}
+    , m_key_rx{}
     , m_key_tx{}
-    , m_error(false) {
+    , m_error(false)
+    , m_knowsRemotePubkey(false) {
     // asserts done here to make sure the key array sizes match up with what libsodium expects;
     // I don't want to include sodium.h publically so can't use the macros there directly
     static_assert(crypto_kx_PUBLICKEYBYTES == KEY_LENGTH, "bad public key array size");
@@ -56,7 +59,8 @@ EncryptionLayerSodium::EncryptionLayerSodium(EncryptionLayerSodium&&) noexcept
 
 EncryptionLayerSodium::~EncryptionLayerSodium() {
     // securely erase all keys from memory
-    sodium_memzero(m_key_rx, KEY_LENGTH);
+    sodium_memzero(m_key_expect_pub, KEY_LENGTH);
+    sodium_memzero(m_key_tx, KEY_LENGTH);
     sodium_memzero(m_key_tx, KEY_LENGTH);
 }
 
@@ -83,9 +87,15 @@ BinaryStream EncryptionLayerSodium::GetPublicKey() const {
     return ret;
 }
 
-void EncryptionLayerSodium::SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) {
+bool EncryptionLayerSodium::SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) {
     uint8_t remotekey[KEY_LENGTH];
     pubkey.ReadBytes(remotekey, KEY_LENGTH);
+
+    // verify identity of remote, if we know the key already
+    if (m_knowsRemotePubkey && sodium_memcmp(remotekey, m_key_expect_pub, KEY_LENGTH) != 0) {
+        // mismatch, remote may be an impostor
+        return false;
+    }
 
     switch (origin) {
     case Handshaker::Origin::SELF:
@@ -100,10 +110,19 @@ void EncryptionLayerSodium::SetRemotePublicKey(Handshaker::Origin origin, Binary
         assert(false && "invalid Handshaker::Origin in EncryptionLayerSodium::SetRemotePublicKey");
         break;
     }
+
+    std::cout << "rx = " << static_cast<int>(m_key_rx[0]) << ", tx = " << static_cast<int>(m_key_tx[0]) << std::endl;
+
+    return !m_error;
 }
 
 void EncryptionLayerSodium::SetLocalKeypair(std::shared_ptr<EncryptionLayer::Keypair> keypair) {
     m_kx = std::static_pointer_cast<EncryptionLayerSodium::Keypair>(keypair);
+}
+
+void EncryptionLayerSodium::ExpectRemotePublicKey(BinaryStream& pubkey) {
+    m_knowsRemotePubkey = true;
+    pubkey.ReadBytes(m_key_expect_pub, KEY_LENGTH);
 }
 
 BinaryStream EncryptionLayerSodium::Encrypt(const BinaryStream& plaintext) {
@@ -115,7 +134,6 @@ BinaryStream EncryptionLayerSodium::Encrypt(const BinaryStream& plaintext) {
     // get a random nonce, and add it to the full ciphertext as prefix
     uint8_t nonce[crypto_secretbox_NONCEBYTES];
     randombytes_buf(nonce, sizeof nonce);
-    ciphertext.SeekToBegin();
     ciphertext.WriteBytes(nonce, sizeof nonce);
 
     // encrypt the plaintext and write it to the output BinaryStream
@@ -126,19 +144,23 @@ BinaryStream EncryptionLayerSodium::Encrypt(const BinaryStream& plaintext) {
 }
 
 BinaryStream EncryptionLayerSodium::Decrypt(BinaryStream& ciphertext) {
+    // read out the nonce from the stream
     uint8_t nonce[crypto_secretbox_NONCEBYTES];
+    assert(ciphertext.GetPosition() == 0); // because we do pointer arithmetic below, which assumes the full ciphertext starts at GetBuffer()
     ciphertext.SeekToBegin();
     ciphertext.ReadBytes(nonce, sizeof nonce);
 
-    //assert(static_cast<int>(ciphertext.GetLength()) - crypto_secretbox_MACBYTES - crypto_secretbox_NONCEBYTES >= 0);
+    assert(ciphertext.GetLength() >= crypto_secretbox_MACBYTES + crypto_secretbox_NONCEBYTES);
     const size_t plaintext_len = ciphertext.GetLength() - crypto_secretbox_MACBYTES - crypto_secretbox_NONCEBYTES;
     const size_t ciphertext_len = ciphertext.GetLength() - crypto_secretbox_NONCEBYTES;
 
+    // allocate a buffer long enough to hold the decrypted plaintext
     BinaryStream plaintext = PreallocateBuffer(plaintext_len);
+    assert(plaintext.GetCapacity() >= plaintext_len);
+    // perform decryption
     if (crypto_secretbox_open_easy(plaintext.GetWritableBuffer(), ciphertext.GetBuffer() + crypto_secretbox_NONCEBYTES, ciphertext_len, nonce, m_key_rx) != 0)
         m_error = true;
 
-    plaintext.SeekToBegin();
     return plaintext;
 }
 

@@ -12,7 +12,9 @@ namespace {
             return "Communication error: incompatible Wirefox version.";
         case wirefox::ConnectResult::INCOMPATIBLE_SECURITY:
             return "Communication error: incompatible security settings.";
-        case wirefox::ConnectResult::INVALID_PASSWORD:
+        case wirefox::ConnectResult::INCORRECT_REMOTE_IDENTITY:
+            return "Communication error: unable to verify server identity.";
+        case wirefox::ConnectResult::INCORRECT_PASSWORD:
             return "The password is incorrect.";
         case wirefox::ConnectResult::NO_FREE_SLOTS:
             return "The server is full.";
