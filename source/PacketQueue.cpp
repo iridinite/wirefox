@@ -177,6 +177,10 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     OutgoingDatagram* datagram = remote.GetNextDatagram(m_peer);
     if (!datagram) return;
 
+    // encrypt this datagram if that's enabled
+    if (!remote.IsOutOfBand() && m_peer->GetEncryptionEnabled())
+        datagram->blob = remote.crypto->Encrypt(datagram->blob);
+
     // dispatch an async write op for this remote
     remote.congestion->NotifySendingBytes(datagram->id, datagram->blob.GetLength());
     remote.socket->BeginWrite(datagram->addr, datagram->blob.GetBuffer(), datagram->blob.GetLength(),
@@ -208,8 +212,14 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
         return;
     }
 
-    // decode the datagram header if it is complete
     BinaryStream inbuffer(buffer, transferred, BinaryStream::WrapMode::READONLY);
+
+    // if we know the remote, then the message may be encrypted
+    if (remote->IsConnected() && m_peer->GetEncryptionEnabled()) {
+        inbuffer = remote->crypto->Decrypt(inbuffer);
+    }
+
+    // decode the datagram header if it is complete
     DatagramHeader datagramHeader;
     if (!datagramHeader.Deserialize(inbuffer)) {
         std::cerr << "PacketQueue: [Remote " << std::to_string(remote->id) << "] Received corrupt or incomplete datagram. Killing connection." << std::endl;

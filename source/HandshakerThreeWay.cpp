@@ -7,9 +7,9 @@
  */
 
 #include "PCH.h"
-#include "HandshakerThreeWay.h"
 #include "RemotePeer.h"
 #include "Peer.h"
+#include "WirefoxConfigRefs.h"
 
 using namespace wirefox::detail;
 
@@ -28,6 +28,11 @@ void HandshakerThreeWay::Begin() {
     BinaryStream hello(HANDSHAKE_LENGTH);
     WriteReplyHeader(hello, m_peer->GetMyPeerID());
     hello.WriteByte(0); // connection phase 0
+
+    // key exchange
+    hello.WriteBool(m_peer->GetEncryptionEnabled());
+    if (m_peer->GetEncryptionEnabled())
+        hello.WriteBytes(m_remote->crypto->GetPublicKey());
 
     m_status = AWAITING_ACK;
     Reply(std::move(hello));
@@ -84,6 +89,34 @@ void HandshakerThreeWay::Handle(const Packet& packet) {
         return;
     }
 
+    // set up connection security
+    assert(m_remote->crypto);
+    if (!m_keySetupDone) {
+        bool remoteWantsCrypto = instream.ReadBool();
+        if (remoteWantsCrypto != m_peer->GetEncryptionEnabled()) {
+            // both peers must agree on whether or not encryption is enabled
+            ReplyWithError(reply, ConnectResult::INCOMPATIBLE_SECURITY);
+            Complete(ConnectResult::INCOMPATIBLE_SECURITY);
+            return;
+        }
+        if (remoteWantsCrypto) {
+            // read out the remote public key into a buffer
+            const auto keylen = cfg::DefaultEncryption::GetKeyLength();
+            const auto remoteKeyBuffer = std::make_unique<uint8_t[]>(keylen);
+            instream.ReadBytes(remoteKeyBuffer.get(), keylen);
+
+            // pass the buffer to the crypto layer, so the key exchange can be completed
+            BinaryStream remoteKey(remoteKeyBuffer.get(), keylen, BinaryStream::WrapMode::READONLY);
+            if (!m_remote->crypto->SetRemotePublicKey(GetOrigin(), remoteKey)) {
+                // if this setter returns false, then there is something wrong/suspicious about the key
+                ReplyWithError(reply, ConnectResult::INCORRECT_REMOTE_IDENTITY); // TODO: is it OK to tell the remote this?
+                Complete(ConnectResult::INCORRECT_REMOTE_IDENTITY);
+            }
+        }
+        // don't need to read the public key again
+        m_keySetupDone = true;
+    }
+
     // for clarity: even though this is p2p networking, below I refer to the 'client' as the one who initiated
     // the connection request, and the 'server' as the one who the client wants to connect to.
 
@@ -91,6 +124,9 @@ void HandshakerThreeWay::Handle(const Packet& packet) {
         // we're the server, and client just sent first part of handshake
         m_status = AWAITING_ACK;
         reply.WriteByte(1);
+        reply.WriteBool(m_peer->GetEncryptionEnabled());
+        if (m_peer->GetEncryptionEnabled())
+            reply.WriteBytes(m_remote->crypto->GetPublicKey());
         Reply(std::move(reply));
 
     } else if (/*m_status == AWAITING_ACK &&*/ GetOrigin() == Origin::REMOTE) {

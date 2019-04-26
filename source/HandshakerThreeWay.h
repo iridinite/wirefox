@@ -31,7 +31,8 @@ namespace wirefox {
              */
             HandshakerThreeWay(Peer* master, RemotePeer* remote, Origin origin)
                 : Handshaker(master, remote, origin)
-                , m_status(NOT_STARTED) {}
+                , m_status(NOT_STARTED)
+                , m_keySetupDone(false) {}
 
             void            Begin() override;
             void            Handle(const Packet& packet) override;
@@ -53,6 +54,7 @@ namespace wirefox {
                 NOT_STARTED,
                 AWAITING_ACK
             }               m_status;
+            bool            m_keySetupDone;
         };
 
         /// \endcond
