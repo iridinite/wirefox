@@ -111,8 +111,6 @@ bool EncryptionLayerSodium::SetRemotePublicKey(Handshaker::Origin origin, Binary
         break;
     }
 
-    std::cout << "rx = " << static_cast<int>(m_key_rx[0]) << ", tx = " << static_cast<int>(m_key_tx[0]) << std::endl;
-
     return !m_error;
 }
 
