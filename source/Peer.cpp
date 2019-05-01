@@ -83,7 +83,10 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
 
     if (public_key) {
         // cannot specify public key while also having crypto disabled, that's silly
-        if (!GetEncryptionEnabled()) return ConnectAttemptResult::INVALID_PARAMETER;
+        if (!GetEncryptionEnabled()) {
+            slot->Reset();
+            return ConnectAttemptResult::INVALID_PARAMETER;
+        }
 
         // tell this remote's crypto layer to expect this exact public key
         BinaryStream public_key_stream(public_key, cfg::DefaultEncryption::GetKeyLength(), BinaryStream::WrapMode::READONLY);
