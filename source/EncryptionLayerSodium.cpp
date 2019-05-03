@@ -54,8 +54,10 @@ EncryptionLayerSodium::EncryptionLayerSodium()
         throw std::runtime_error("libsodium failed to init");
 }
 
-EncryptionLayerSodium::EncryptionLayerSodium(EncryptionLayerSodium&&) noexcept
-    : EncryptionLayerSodium() {}
+EncryptionLayerSodium::EncryptionLayerSodium(EncryptionLayerSodium&& other) noexcept
+    : EncryptionLayerSodium() {
+    *this = std::move(other);
+}
 
 EncryptionLayerSodium::~EncryptionLayerSodium() {
     // securely erase all keys from memory
@@ -64,7 +66,23 @@ EncryptionLayerSodium::~EncryptionLayerSodium() {
     sodium_memzero(m_key_tx, KEY_LENGTH);
 }
 
-EncryptionLayerSodium& EncryptionLayerSodium::operator=(EncryptionLayerSodium&&) noexcept {
+EncryptionLayerSodium& EncryptionLayerSodium::operator=(EncryptionLayerSodium&& other) noexcept {
+    if (this != &other) {
+        m_kx = std::move(other.m_kx);
+
+        memcpy(m_key_expect_pub, other.m_key_expect_pub, sizeof m_key_expect_pub);
+        memcpy(m_key_rx, other.m_key_rx, sizeof m_key_rx);
+        memcpy(m_key_tx, other.m_key_tx, sizeof m_key_tx);
+
+        sodium_memzero(other.m_key_expect_pub, sizeof m_key_expect_pub);
+        sodium_memzero(other.m_key_rx, sizeof m_key_rx);
+        sodium_memzero(other.m_key_tx, sizeof m_key_tx);
+
+        m_error = other.m_error;
+        m_knowsRemotePubkey = other.m_knowsRemotePubkey;
+        other.m_error = false;
+        other.m_knowsRemotePubkey = false;
+    }
     return *this;
 }
 
