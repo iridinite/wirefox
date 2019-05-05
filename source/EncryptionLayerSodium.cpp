@@ -166,6 +166,10 @@ BinaryStream EncryptionLayerSodium::GetEphemeralPublicKey() const {
 
 void EncryptionLayerSodium::SetCryptoEstablished() {
     m_established = true;
+
+#ifdef WIREFOX_SODIUM_MONITORING
+    std::cout << "Key exchange complete, encryption enabled" << std::endl;
+#endif
 }
 
 bool EncryptionLayerSodium::GetCryptoEstablished() const {
@@ -293,11 +297,16 @@ BinaryStream EncryptionLayerSodium::Encrypt(const BinaryStream& plaintext) {
 BinaryStream EncryptionLayerSodium::Decrypt(BinaryStream& ciphertext) {
     // read out the nonce from the stream
     uint8_t nonce[WIREFOX_SODIUM_NONCE_LEN];
-    assert(ciphertext.GetPosition() == 0); // because we do pointer arithmetic below, which assumes the full ciphertext starts at GetBuffer()
-    ciphertext.SeekToBegin();
+    assert(ciphertext.GetPosition() == 0);  // because we do pointer arithmetic below, which assumes the full ciphertext starts at GetBuffer().
+    ciphertext.SeekToBegin();               // but set it anyway, just to be safe
     ciphertext.ReadBytes(nonce, sizeof nonce);
 
-    assert(ciphertext.GetLength() >= WIREFOX_SODIUM_MAC_LEN + WIREFOX_SODIUM_NONCE_LEN);
+    // prevent buffer overread if ciphertext is too small to actually contain a proper ciphertext
+    if (ciphertext.GetLength() < WIREFOX_SODIUM_MAC_LEN + WIREFOX_SODIUM_NONCE_LEN) {
+        m_error = true;
+        return ciphertext;
+    }
+
     const auto* ciphertext_ptr = ciphertext.GetBuffer() + WIREFOX_SODIUM_NONCE_LEN;
     const size_t ciphertext_len = ciphertext.GetLength() - WIREFOX_SODIUM_NONCE_LEN;
     const size_t plaintext_len = ciphertext_len - WIREFOX_SODIUM_MAC_LEN;

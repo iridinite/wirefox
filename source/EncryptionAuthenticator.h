@@ -26,6 +26,7 @@ namespace wirefox {
 
             void Begin(BinaryStream& outstream);
             ConnectResult Handle(BinaryStream& instream, BinaryStream& outstream);
+            void PostHandle();
 
         private:
             ConnectResult HandleKeyExchange(BinaryStream& instream, BinaryStream& outstream);
@@ -39,6 +40,8 @@ namespace wirefox {
                 STATE_AUTHENTICATION,
                 STATE_DONE
             } m_state;
+
+            bool m_enableCryptoAfterReply;
         };
 
     }

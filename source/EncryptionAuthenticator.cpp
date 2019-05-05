@@ -15,7 +15,8 @@ using namespace detail;
 EncryptionAuthenticator::EncryptionAuthenticator(Handshaker::Origin origin, EncryptionLayer& crypto)
     : m_crypto(crypto)
     , m_origin(origin)
-    , m_state(STATE_KEY_EXCHANGE) {}
+    , m_state(STATE_KEY_EXCHANGE)
+    , m_enableCryptoAfterReply(false) {}
 
 void EncryptionAuthenticator::Begin(BinaryStream& outstream) {
     std::cout << "Begin STATE_KEY_EXCHANGE" << std::endl;
@@ -46,6 +47,13 @@ ConnectResult EncryptionAuthenticator::Handle(BinaryStream& instream, BinaryStre
     }
 }
 
+void EncryptionAuthenticator::PostHandle() {
+    if (!m_enableCryptoAfterReply) return;
+
+    m_enableCryptoAfterReply = false;
+    m_crypto.SetCryptoEstablished();
+}
+
 ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream, BinaryStream& outstream) {
     std::cout << "Handle STATE_KEY_EXCHANGE, origin " << int(m_origin) << std::endl;
 
@@ -59,6 +67,8 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
     // pass the buffer to the crypto layer, so the key exchange can be completed
     if (!m_crypto.HandleKeyExchange(m_origin, remoteKey))
         return ConnectResult::INCORRECT_REMOTE_IDENTITY;
+
+    m_enableCryptoAfterReply = true;
 
     switch (m_origin) {
     case Handshaker::Origin::SELF:
@@ -89,7 +99,7 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
         } else {
             std::cout << "Client needs no auth challenge" << std::endl;
             m_state = STATE_DONE;
-            return ConnectResult::OK;
+            //return ConnectResult::OK;
         }
 
         break;
