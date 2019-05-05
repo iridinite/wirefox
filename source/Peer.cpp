@@ -187,7 +187,7 @@ void Peer::Ping(const std::string& hostname, uint16_t port) const {
     if (!m_masterSocket->Resolve(hostname, port, addr)) return;
 
     Packet ping(PacketCommand::PING, nullptr, 0);
-    m_queue->EnqueueOutOfBand(ping, addr);
+    m_queue->EnqueueOutOfBand(ping, addr, nullptr);
 }
 
 void Peer::PingLocalNetwork(uint16_t port) const {
@@ -260,7 +260,7 @@ std::shared_ptr<EncryptionLayer::Keypair> Peer::GetEncryptionIdentity() const {
 }
 
 void Peer::SendOutOfBand(const Packet& packet, const RemoteAddress& addr) {
-    m_queue->EnqueueOutOfBand(packet, addr);
+    m_queue->EnqueueOutOfBand(packet, addr, nullptr);
 }
 
 std::unique_ptr<Packet> Peer::Receive() {
@@ -487,9 +487,15 @@ void Peer::SetupRemotePeerCallbacks(RemotePeer* remote) {
     remote->handshake->SetCompletionHandler(std::bind(&Peer::SendHandshakeCompleteNotification, this, remote, _1));
 }
 
-void Peer::SendHandshakePart(const RemotePeer* remote, BinaryStream&& outstream) {
+void Peer::SendHandshakePart(RemotePeer* remote, BinaryStream&& outstream) {
+    assert(remote->crypto);
+
+    // check crypto status HERE, not in PacketQueue/DatagramBuilder, because for the S->C key exchange,
+    // crypto will be enabled right after this function returns, but that kx packet should not be encrypted yet
+    RemotePeer* forceCryptoBy = remote->crypto->GetCryptoEstablished() ? remote : nullptr;
+
     Packet packet(PacketCommand::CONNECT_ATTEMPT, std::move(outstream));
-    this->SendOutOfBand(packet, remote->addr);
+    m_queue->EnqueueOutOfBand(packet, remote->addr, forceCryptoBy);
 }
 
 void Peer::SendHandshakeCompleteNotification(RemotePeer* remote, Packet&& notification) {

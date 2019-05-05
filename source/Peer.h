@@ -190,7 +190,7 @@ namespace wirefox {
 
         private:
             void                        SetupRemotePeerCallbacks(RemotePeer* remote);
-            void                        SendHandshakePart(const RemotePeer* remote, BinaryStream&& outstream);
+            void                        SendHandshakePart(RemotePeer* remote, BinaryStream&& outstream);
             void                        SendHandshakeCompleteNotification(RemotePeer* remote, Packet&& notification);
 
             static PeerID               GeneratePeerID();

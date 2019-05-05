@@ -68,8 +68,6 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
     if (!m_crypto.HandleKeyExchange(m_origin, remoteKey))
         return ConnectResult::INCORRECT_REMOTE_IDENTITY;
 
-    m_enableCryptoAfterReply = true;
-
     switch (m_origin) {
     case Handshaker::Origin::SELF:
         // server just sent us their part of the key xchg, so now move on to auth if that's required
@@ -82,6 +80,7 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
         } else {
             // no auth required, send final ack
             m_state = STATE_DONE;
+            m_crypto.SetCryptoEstablished(); // and that final ack must be sent with crypto! only kx is done unencrypted
             outstream.WriteByte(STATE_DONE);
             return ConnectResult::OK;
         }
@@ -91,6 +90,9 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
         // give the client our ephemeral public key, for the key xchg
         outstream.WriteByte(STATE_KEY_EXCHANGE);
         outstream.WriteBytes(m_crypto.GetEphemeralPublicKey());
+
+        // only actually enable crypto AFTER this kx packet goes out, because client needs to have our unencrypted kx key first
+        m_enableCryptoAfterReply = true;
 
         // client indicates whether they also want to send us an auth challenge
         if (instream.ReadBool()) {

@@ -38,11 +38,12 @@ namespace wirefox {
             struct OutgoingPacket {
                 BinaryStream    blob;       ///< A byte blob that contains both the packet header and payload.
                 RemoteAddress   addr;       ///< The remote endpoint this packet is addressed to.
-                Timestamp       sendNext;   ///< Indicates when this packet should be treated as lost and resent.
                 RemotePeer*     remote;     ///< The peer slot associated with this packet.
+                RemotePeer*     forceCrypto;///< If not nullptr, force this packet to be encrypted using this peer's crypto layer.
+                Timestamp       sendNext;   ///< Indicates when this packet should be treated as lost and resent.
+                unsigned int    sendCount;  ///< Indicates the number of times this packet has been sent.
                 PacketID        id;         ///< The ID number of this datagram, used for resending and acknowledgement.
                 PacketOptions   options;    ///< Reliability settings associated with this packet.
-                unsigned int    sendCount;  ///< Indicates the number of times this packet has been sent.
 
                 /// Returns a value indicating whether the given PacketOptions are set for this OutgoingPacket.
                 bool            HasFlag(PacketOptions test) const;
@@ -54,6 +55,7 @@ namespace wirefox {
                 RemoteAddress   addr;       ///< The remote endpoint this packet is addressed to.
                 BinaryStream    blob;       ///< A byte blob that contains both the datagram header and all packets, if any.
                 Timestamp       discard;    ///< The timestamp at which this datagram should be removed / cleaned up.
+                RemotePeer*     forceCrypto;///< If not nullptr, force this packet to be encrypted using this peer's crypto layer.
                 std::vector<PacketID> packets;  ///< The list of PacketIDs this datagram contains. Used for acking packets.
             };
 
@@ -90,7 +92,7 @@ namespace wirefox {
              * \param[in]   packet      The packet to send out.
              * \param[in]   addr        The raw remote address to send data to.
              */
-            void            EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr);
+            void            EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr, RemotePeer* forceCryptoBy);
 
             /**
              * \brief Send a message to this local socket.

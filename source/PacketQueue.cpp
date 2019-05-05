@@ -49,6 +49,7 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     meta.id = nextPacketID;
     meta.addr = remote->addr;
     meta.remote = remote;
+    meta.forceCrypto = nullptr;
     meta.options = options;
     meta.sendNext = Time::Now();
     meta.sendCount = 0;
@@ -78,7 +79,7 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     return nextPacketID;
 }
 
-void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr) {
+void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr, RemotePeer* forceCryptoBy) {
     // somewhat arbitrary number, but the point is that out-of-band packets cannot be split
     assert(packet.GetLength() < cfg::MTU - 100);
 
@@ -87,6 +88,7 @@ void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& ad
     meta.addr = addr;
     meta.options = PacketOptions::UNRELIABLE;
     meta.remote = &m_peer->GetRemoteByIndex(0);
+    meta.forceCrypto = forceCryptoBy;
     meta.sendNext = Time::Now();
     meta.sendCount = 0;
 
@@ -178,15 +180,24 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     if (!datagram) return;
 
     // encrypt this datagram if that's enabled
-    const bool encryptionDesired = m_peer->GetEncryptionEnabled() && remote.crypto && remote.crypto->GetCryptoEstablished();
-    if (encryptionDesired) {
-        std::cout << "Encrypting packet" << std::endl;
-        datagram->blob = remote.crypto->Encrypt(datagram->blob);
+    if (m_peer->GetEncryptionEnabled()) {
+        // get correct crypto layer for this packet -- if DatagramBuilder set an explicit crypto layer, use that one
+        EncryptionLayer* crypto = (datagram->forceCrypto != nullptr)
+            ? datagram->forceCrypto->crypto.get()
+            : remote.crypto.get();
 
-        // I don't know why this would happen, but I guess encryption could fail?
-        if (remote.crypto->GetNeedsToBail()) {
-            m_peer->DisconnectImmediate(&remote);
-            return;
+        // if key exchange was completed already, replace the datagram blob with a ciphertext
+        const bool encryptionDesired = crypto && crypto->GetCryptoEstablished();
+        if (encryptionDesired) {
+            if (datagram->forceCrypto) std::cout << "Forcing crypto" << std::endl;
+            std::cout << "Encrypting packet" << std::endl;
+            datagram->blob = crypto->Encrypt(datagram->blob);
+
+            // I don't know why this would happen, but I guess encryption could fail?
+            if (crypto->GetNeedsToBail()) {
+                m_peer->DisconnectImmediate(&remote);
+                return;
+            }
         }
     }
 
@@ -229,6 +240,8 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
         inbuffer = remote->crypto->Decrypt(inbuffer);
 
         // the ciphertext might be malformed for several reasons; decryption failure == bad connection
+        // TODO: Vulnerability to TCP-reset-style attack: an adversary could intentially inject a corrupt datagram. Is this a problem?
+        // TODO: I currently don't think so; if the goal is to kill comms, they could also just intercept & discard all datagrams.
         if (remote->crypto->GetNeedsToBail()) {
             m_peer->DisconnectImmediate(remote);
             return;
@@ -254,7 +267,7 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 
     // handle offline messages separately (unconnected pings, or handshake fragment)
     if (!datagramHeader.flag_link) {
-        m_peer->OnUnconnectedMessage(sender, buffer, transferred);
+        m_peer->OnUnconnectedMessage(sender, inbuffer);
         return;
     }
 
