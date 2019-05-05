@@ -21,6 +21,7 @@ namespace wirefox {
         struct PacketHeader;
         struct RemotePeer;
         class Peer;
+        class EncryptionAuthenticator;
 
         /**
          * \cond WIREFOX_INTERNAL
@@ -103,6 +104,8 @@ namespace wirefox {
 
             RemotePeer*             m_remote;
             Peer*                   m_peer;
+
+            std::unique_ptr<EncryptionAuthenticator> m_auth;
 
         private:
             ReplyHandler_t          m_replyHandler;

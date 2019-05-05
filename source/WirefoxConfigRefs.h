@@ -33,6 +33,7 @@
 // DefaultEncryption
 #ifdef WIREFOX_ENABLE_ENCRYPTION
 #include "EncryptionLayerSodium.h"
+#include "EncryptionAuthenticator.h"
 #else
 #include "EncryptionLayerNull.h"
 #endif

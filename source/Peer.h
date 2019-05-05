@@ -71,11 +71,11 @@ namespace wirefox {
             void                        PingLocalNetwork(uint16_t port) const override;
 
             void                        SetEncryptionEnabled(bool enabled) override;
-            void                        SetEncryptionLocalKeypair(const uint8_t* key_secret, const uint8_t* key_public) override;
-            void                        GenerateKeypair(uint8_t* key_secret, uint8_t* key_public) const override;
+            void                        SetEncryptionIdentity(const uint8_t* key_secret, const uint8_t* key_public) override;
+            void                        GenerateIdentity(uint8_t* key_secret, uint8_t* key_public) const override;
             size_t                      GetEncryptionKeyLength() const override;
             bool                        GetEncryptionEnabled() const;
-            std::shared_ptr<EncryptionLayer::Keypair> GetEncryptionLocalKeypair() const;
+            std::shared_ptr<EncryptionLayer::Keypair> GetEncryptionIdentity() const;
 
             /**
              * \brief Sends an unconnected packet to an arbitrary remote endpoint.
@@ -216,7 +216,7 @@ namespace wirefox {
             std::map<PeerID, RemotePeer*>   m_remoteLookup;
             std::vector<ChannelMode>        m_channels;
 
-            std::shared_ptr<EncryptionLayer::Keypair> m_crypto_keypair;
+            std::shared_ptr<EncryptionLayer::Keypair> m_crypto_identity;
             bool m_crypto_enabled;
         };
 

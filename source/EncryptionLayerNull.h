@@ -29,13 +29,13 @@ namespace wirefox {
 
             bool GetNeedsToBail() const override { return false; };
 
-            BinaryStream GetPublicKey() const override { return BinaryStream(0); }
-            bool SetRemotePublicKey(Handshaker::Origin, BinaryStream&) override { return true; }
-            void ExpectRemotePublicKey(BinaryStream&) override {}
+            BinaryStream GetEphemeralPublicKey() const override { return BinaryStream(0); }
+            bool HandleKeyExchange(Handshaker::Origin, BinaryStream&) override { return true; }
+            void ExpectRemoteIdentity(BinaryStream&) override {}
 
             BinaryStream Encrypt(const BinaryStream& plaintext) override { return plaintext; }
             BinaryStream Decrypt(BinaryStream& ciphertext) override { return ciphertext; }
-            void SetLocalKeypair(std::shared_ptr<Keypair>) override {}
+            void SetLocalIdentity(std::shared_ptr<Keypair>) override {}
 
             /**
              * \brief Returns the maximum amount of overhead added to a plaintext, in bytes.

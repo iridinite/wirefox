@@ -90,7 +90,7 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
 
         // tell this remote's crypto layer to expect this exact public key
         BinaryStream public_key_stream(public_key, cfg::DefaultEncryption::GetKeyLength(), BinaryStream::WrapMode::READONLY);
-        slot->crypto->ExpectRemotePublicKey(public_key_stream);
+        slot->crypto->ExpectRemoteIdentity(public_key_stream);
     }
 
     auto ret = m_masterSocket->Connect(host, port, [this, slot](bool error, RemoteAddress addr, std::shared_ptr<Socket> socket, std::string) {
@@ -101,6 +101,7 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
             return;
         }
 
+        std::cout << "do connect" << std::endl;
         slot->addr = addr;
         slot->socket = std::move(socket);
         SetupRemotePeerCallbacks(slot);
@@ -212,11 +213,11 @@ void Peer::SetEncryptionEnabled(bool enabled) {
 #ifdef WIREFOX_ENABLE_ENCRYPTION
     if (enabled) {
         // generate a random keypair and enable crypto
-        m_crypto_keypair = std::make_shared<cfg::DefaultEncryption::Keypair>();
+        m_crypto_identity = cfg::DefaultEncryption::Keypair::CreateIdentity();
         m_crypto_enabled = true;
     } else {
         // release keypair
-        m_crypto_keypair = nullptr;
+        m_crypto_identity = nullptr;
         m_crypto_enabled = false;
     }
 #else
@@ -225,22 +226,21 @@ void Peer::SetEncryptionEnabled(bool enabled) {
 #endif
 }
 
-void Peer::SetEncryptionLocalKeypair(const uint8_t* key_secret, const uint8_t* key_public) {
+void Peer::SetEncryptionIdentity(const uint8_t* key_secret, const uint8_t* key_public) {
     if (!m_crypto_enabled) return;
 
 #ifdef WIREFOX_ENABLE_ENCRYPTION
-    m_crypto_keypair = std::make_shared<cfg::DefaultEncryption::Keypair>(key_secret, key_public);
+    m_crypto_identity = std::make_shared<cfg::DefaultEncryption::Keypair>(key_secret, key_public);
 #else
     (void)key_secret;
     (void)key_public;
 #endif
 }
 
-void Peer::GenerateKeypair(uint8_t* key_secret, uint8_t* key_public) const {
+void Peer::GenerateIdentity(uint8_t* key_secret, uint8_t* key_public) const {
 #ifdef WIREFOX_ENABLE_ENCRYPTION
-    cfg::DefaultEncryption::Keypair keypair;
-    memcpy(key_secret, keypair.key_secret, GetEncryptionKeyLength());
-    memcpy(key_public, keypair.key_public, GetEncryptionKeyLength());
+    auto keypair = cfg::DefaultEncryption::Keypair::CreateIdentity();
+    keypair->CopyTo(key_secret, key_public);
 #else
     (void)key_secret;
     (void)key_public;
@@ -255,8 +255,8 @@ bool Peer::GetEncryptionEnabled() const {
     return m_crypto_enabled;
 }
 
-std::shared_ptr<EncryptionLayer::Keypair> Peer::GetEncryptionLocalKeypair() const {
-    return m_crypto_keypair;
+std::shared_ptr<EncryptionLayer::Keypair> Peer::GetEncryptionIdentity() const {
+    return m_crypto_identity;
 }
 
 void Peer::SendOutOfBand(const Packet& packet, const RemoteAddress& addr) {
@@ -362,7 +362,7 @@ void Peer::OnSystemPacket(RemotePeer& remote, std::unique_ptr<Packet> packet) {
         OnDisconnect(remote, PacketCommand::NOTIFY_DISCONNECTED);
 
         Packet dc_ack(PacketCommand::DISCONNECT_ACK, nullptr, 0);
-        m_queue->EnqueueOutOfBand(dc_ack, remote.addr);
+        this->SendOutOfBand(dc_ack, remote.addr);
 
         remote.Reset();
         break;

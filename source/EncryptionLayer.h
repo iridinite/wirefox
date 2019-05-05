@@ -52,7 +52,7 @@ namespace wirefox {
              * If a cryptographic operation fails, or if a verification operation fails, or if the
              * implementation believes the connected party is compromised, this function returns true.
              * 
-             * This should be tested after calling SetRemotePublicKey(), Encrypt(), or Decrypt().
+             * This should be tested after calling HandleKeyExchange(), Encrypt(), or Decrypt().
              */
             virtual bool GetNeedsToBail() const = 0;
 
@@ -61,7 +61,15 @@ namespace wirefox {
              * 
              * As part of a key exchange, this piece of data should be sent to the other party.
              */
-            virtual BinaryStream GetPublicKey() const = 0;
+            virtual BinaryStream GetEphemeralPublicKey() const = 0;
+
+            virtual void SetCryptoEstablished() = 0;
+            virtual bool GetCryptoEstablished() const = 0;
+            virtual bool GetNeedsChallenge() const = 0;
+
+            virtual void CreateChallenge(BinaryStream& outstream) = 0;
+            virtual bool HandleChallengeIncoming(BinaryStream& instream, BinaryStream& answer) = 0;
+            virtual bool HandleChallengeResponse(BinaryStream& instream) = 0;
 
             /**
              * \brief Completes the key exchange using a remote public key.
@@ -73,16 +81,16 @@ namespace wirefox {
              * \param[in]   pubkey      The public key of the remote endpoint.
              * 
              * \returns False if the key is incorrect/suspicious, e.g. if it mismatches the key set by
-             * ExpectRemotePublicKey(). Otherwise, returns true.
+             * ExpectRemoteIdentity(). Otherwise, returns true.
              */
-            virtual bool SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) = 0;
+            virtual bool HandleKeyExchange(Handshaker::Origin origin, BinaryStream& pubkey) = 0;
 
             /**
              * \brief Sets the keypair that represents the local peer.
              * 
              * \param[in]   keypair     A reference to the keypair shared by all remotes on this local peer.
              */
-            virtual void SetLocalKeypair(std::shared_ptr<Keypair> keypair) = 0;
+            virtual void SetLocalIdentity(std::shared_ptr<Keypair> keypair) = 0;
 
             /**
              * \brief Informs the crypto layer that this specific public key is expected.
@@ -92,7 +100,7 @@ namespace wirefox {
              * 
              * \param[in]   pubkey      A stream that contains the remote endpoint's public key.
              */
-            virtual void ExpectRemotePublicKey(BinaryStream& pubkey) = 0;
+            virtual void ExpectRemoteIdentity(BinaryStream& pubkey) = 0;
 
             /**
              * \brief Encrypts a piece of data into a ciphertext.

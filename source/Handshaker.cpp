@@ -9,6 +9,9 @@
 #include "PCH.h"
 #include "Handshaker.h"
 #include "Packet.h"
+#include "Peer.h"
+#include "RemotePeer.h"
+#include "WirefoxConfigRefs.h"
 
 using namespace wirefox::detail;
 
@@ -22,7 +25,11 @@ Handshaker::Handshaker(Peer* master, RemotePeer* remote, Origin origin)
     , m_origin(origin)
     , m_result(ConnectResult::IN_PROGRESS)
     , m_lastReply(0)
-    , m_resendAttempts(0) {}
+    , m_resendAttempts(0) {
+    // set up authenticator if crypto enabled, so we can do the additional round trips
+    if (m_peer->GetEncryptionEnabled())
+        m_auth = std::make_unique<EncryptionAuthenticator>(origin, *m_remote->crypto);
+}
 
 void Handshaker::SetReplyHandler(ReplyHandler_t handler) {
     m_replyHandler = handler;
@@ -74,6 +81,13 @@ void Handshaker::Complete(ConnectResult result) {
 
 void Handshaker::Update() {
     if (IsDone() || !Time::Elapsed(m_resendNext)) return;
+
+    // ensure we're not poking at this object from both the packet and socket thread
+    std::unique_lock<decltype(m_remote->lock)> lock(m_remote->lock, std::try_to_lock);
+    if (!lock.owns_lock()) {
+        std::cout << "Skip handshaker update" << std::endl;
+        return;
+    }
 
     // There is one edge case where m_lastReply might be empty: if a new remote was reserved for an incoming
     // handshake part, but that handshake was a stage mismatch, so it was silently ignored and no Reply was recorded.

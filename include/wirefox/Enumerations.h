@@ -49,9 +49,9 @@ namespace wirefox {
         INCOMPATIBLE_PROTOCOL,
         /// The remote endpoint is not running the same version of Wirefox.
         INCOMPATIBLE_VERSION,
-        /// The remote endpoint has different security settings than we do.
+        /// The remote endpoint has different security settings than we do, or an error occurred during encryption or decryption.
         INCOMPATIBLE_SECURITY,
-        /// The identity of the remote endpoint could not be verified because the public key mismatched. Likely causes are a configuration error, or a MITM-attack.
+        /// The identity of the remote endpoint could not be verified. Likely causes are a configuration error, or an active MITM-attack.
         INCORRECT_REMOTE_IDENTITY,
         /// The remote endpoint rejected the password.
         INCORRECT_PASSWORD,

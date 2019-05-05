@@ -21,18 +21,26 @@ namespace wirefox {
          */
         class EncryptionLayerSodium : public EncryptionLayer {
             static constexpr size_t KEY_LENGTH = 32;
+            static constexpr size_t CHALLENGE_LENGTH = 64;
 
         public:
             /// Represents a public/private keypair suitable for use with libsodium's key exchange.
             class Keypair : public EncryptionLayer::Keypair {
+                friend class EncryptionLayerSodium;
             public:
-                /// Default constructor, initializes a new keypair.
+                /// Default constructor, initializes a zero keypair.
                 Keypair();
                 /// Constructor that copies preset keys.
                 Keypair(const uint8_t* key_secret, const uint8_t* key_public);
                 /// Destructor, securely erases the keypair from memory.
                 ~Keypair();
 
+                static std::shared_ptr<Keypair> CreateIdentity();
+                static std::shared_ptr<Keypair> CreateKeyExchange();
+
+                void CopyTo(uint8_t* out_secret, uint8_t* out_public) const;
+
+            private:
                 uint8_t key_public[KEY_LENGTH];
                 uint8_t key_secret[KEY_LENGTH];
             };
@@ -47,10 +55,17 @@ namespace wirefox {
 
             bool GetNeedsToBail() const override;
 
-            BinaryStream GetPublicKey() const override;
-            bool SetRemotePublicKey(Handshaker::Origin origin, BinaryStream& pubkey) override;
-            void SetLocalKeypair(std::shared_ptr<EncryptionLayer::Keypair> keypair) override;
-            void ExpectRemotePublicKey(BinaryStream& pubkey) override;
+            BinaryStream GetEphemeralPublicKey() const override;
+
+            void SetCryptoEstablished() override;
+            bool GetCryptoEstablished() const override;
+            bool GetNeedsChallenge() const override;
+            void CreateChallenge(BinaryStream& outstream) override;
+            bool HandleKeyExchange(Handshaker::Origin origin, BinaryStream& pubkey) override;
+            bool HandleChallengeResponse(BinaryStream& instream) override;
+            bool HandleChallengeIncoming(BinaryStream& instream, BinaryStream& answer) override;
+            void SetLocalIdentity(std::shared_ptr<EncryptionLayer::Keypair> keypair) override;
+            void ExpectRemoteIdentity(BinaryStream& pubkey) override;
 
             BinaryStream Encrypt(const BinaryStream& plaintext) override;
             BinaryStream Decrypt(BinaryStream& ciphertext) override;
@@ -67,10 +82,15 @@ namespace wirefox {
 
         private:
             /// A handle to the local peer's keypair.
+            std::shared_ptr<Keypair> m_identity;
+            /// A handle to the ephemeral keypair used for the key exchange.
             std::shared_ptr<Keypair> m_kx;
 
             /// The remote public key, if known beforehand.
-            uint8_t m_key_expect_pub[KEY_LENGTH];
+            uint8_t m_remote_identity_pk[KEY_LENGTH];
+
+            /// The challenge that was issued to the remote host, if any.
+            uint8_t m_issued_challenge[CHALLENGE_LENGTH];
 
             /// Session key for decrypting received messages.
             uint8_t m_key_rx[KEY_LENGTH];
@@ -78,7 +98,9 @@ namespace wirefox {
             uint8_t m_key_tx[KEY_LENGTH];
 
             bool m_error;
-            bool m_knowsRemotePubkey;
+            bool m_established;
+            bool m_remoteIdentityKnown;
+            bool m_remoteAuthExpected;
         };
 
         /// \endcond

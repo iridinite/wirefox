@@ -137,10 +137,10 @@ void PacketQueue::ThreadWorker() {
             if (remote.handshake && !remote.handshake->IsDone())
                 remote.handshake->Update();
             // various periodic updates
-            if (remote.IsConnected()) {
+            if (remote.congestion)
                 remote.congestion->Update();
+            if (remote.receipt)
                 remote.receipt->Update();
-            }
 
             // disconnection timeout
             auto timeout = remote.disconnect.load();
@@ -178,7 +178,9 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     if (!datagram) return;
 
     // encrypt this datagram if that's enabled
-    if (!remote.IsOutOfBand() && m_peer->GetEncryptionEnabled()) {
+    const bool encryptionDesired = m_peer->GetEncryptionEnabled() && remote.crypto && remote.crypto->GetCryptoEstablished();
+    if (encryptionDesired) {
+        std::cout << "Encrypting packet" << std::endl;
         datagram->blob = remote.crypto->Encrypt(datagram->blob);
 
         // I don't know why this would happen, but I guess encryption could fail?
@@ -222,7 +224,8 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
     BinaryStream inbuffer(buffer, transferred, BinaryStream::WrapMode::READONLY);
 
     // if we know the remote, then the message may be encrypted
-    if (remote->IsConnected() && m_peer->GetEncryptionEnabled()) {
+    if (remote->crypto && remote->crypto->GetCryptoEstablished()) {
+        std::cout << "Decrypting packet" << std::endl;
         inbuffer = remote->crypto->Decrypt(inbuffer);
 
         // the ciphertext might be malformed for several reasons; decryption failure == bad connection

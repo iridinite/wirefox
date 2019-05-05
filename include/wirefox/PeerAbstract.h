@@ -213,7 +213,7 @@ namespace wirefox {
         virtual void                    SetEncryptionEnabled(bool enabled) = 0;
 
         /**
-         * \brief Restore a keypair that was previously generated using GenerateKeypair().
+         * \brief Restore a keypair that was previously generated using GenerateIdentity().
          * 
          * Normally, you do not need to use this function. When you enable encryption, a random keypair will be
          * automatically generated for you. This method is meant only to be used for dedicated servers you control.
@@ -221,7 +221,7 @@ namespace wirefox {
          * \param[in]   key_secret      A pointer to the private key.
          * \param[in]   key_public      A pointer to the public key.
          */
-        virtual void                    SetEncryptionLocalKeypair(const uint8_t* key_secret, const uint8_t* key_public) = 0;
+        virtual void                    SetEncryptionIdentity(const uint8_t* key_secret, const uint8_t* key_public) = 0;
 
         /**
          * \brief Generate a keypair, which you can store for later use.
@@ -234,7 +234,7 @@ namespace wirefox {
          * \param[out]  key_secret      Output array to contain the private key.
          * \param[out]  key_public      Output array to contain the public key.
          */
-        virtual void                    GenerateKeypair(uint8_t* key_secret, uint8_t* key_public) const = 0;
+        virtual void                    GenerateIdentity(uint8_t* key_secret, uint8_t* key_public) const = 0;
 
         /**
          * \brief Gets the expected length of all encryption keys, in bytes.

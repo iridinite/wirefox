@@ -124,14 +124,9 @@ void RemotePeer::Setup(Peer* master, Handshaker::Origin origin) {
 
     // used by remote #0 to stop handshake from being instantiated, as out-of-band comms should not do handshakes
     if (origin != Handshaker::Origin::INVALID) {
+        crypto = std::make_unique<cfg::DefaultEncryption>();
+        crypto->SetLocalIdentity(master->GetEncryptionIdentity());
         handshake = std::make_unique<cfg::DefaultHandshaker>(master, this, origin);
-
-        if (master->GetEncryptionEnabled()) {
-            crypto = std::make_unique<cfg::DefaultEncryption>();
-            crypto->SetLocalKeypair(master->GetEncryptionLocalKeypair());
-        }
-        else
-            crypto = std::make_unique<EncryptionLayerNull>();
     }
 }
 
