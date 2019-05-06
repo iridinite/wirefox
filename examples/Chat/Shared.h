@@ -17,18 +17,18 @@ class IChat {
 public:
     virtual ~IChat() = default;
 
-    virtual void    Tick() = 0;
-    virtual void    HandleInput(const std::string& input) = 0;
+    virtual void Tick() = 0;
+    virtual void HandleInput(const std::string& input) = 0;
 };
 
 
 // These are example encryption keys, hardcoded for convenience.
-// You can generate your own keys by calling peer->GenerateKeypair(), and passing in two memory blocks
+// You can generate your own keys by calling peer->GenerateIdentity(), and passing in two memory blocks
 // that are large enough to hold them (peer->GetEncryptionKeyLength()), then save them to a file.
 
-// Pass your keys peer->SetEncryptionLocalKeypair() on the server, then pass the public key to
-// peer->Connect() on the client. The client will refuse to complete the connection if the server
-// then reports a mismatching public key, thus providing resistance against MITM attacks.
+// Pass your keys peer->SetEncryptionIdentity() on the server, then pass the public key to
+// peer->Connect() on the client. The client will refuse to complete the connection if the server cannot
+// prove that it knows the corresponding private key, thus providing resistance against MITM attacks.
 // Obviously, do not ship the server's secret key with the client like in this demo.
 
 // Note that you don't have to do all this in a pure P2P scenario (you can't, because the server's

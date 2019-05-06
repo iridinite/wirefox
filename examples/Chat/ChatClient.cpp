@@ -125,6 +125,12 @@ void ChatClient::HandleInput(const std::string& input) {
         std::string hostname = input.substr(9);
         Connect(hostname, m_port);
 
+#ifdef _DEBUG
+    } else if (strcmp(input.c_str(), "/c") == 0) {
+        // connect localhost
+        Connect("localhost", m_port);
+#endif
+
     } else if (strcmp(input.c_str(), "/dc") == 0 || strcmp(input.c_str(), "/disconnect") == 0) {
         if (!m_connected) {
             std::cout << "You're not connected to a server." << std::endl;
