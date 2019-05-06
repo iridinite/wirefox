@@ -19,7 +19,6 @@ EncryptionAuthenticator::EncryptionAuthenticator(Handshaker::Origin origin, Encr
     , m_enableCryptoAfterReply(false) {}
 
 void EncryptionAuthenticator::Begin(BinaryStream& outstream) {
-    std::cout << "Begin STATE_KEY_EXCHANGE" << std::endl;
     outstream.WriteByte(STATE_KEY_EXCHANGE);
     outstream.WriteBytes(m_crypto.GetEphemeralPublicKey());
     outstream.WriteBool(m_crypto.GetNeedsChallenge());
@@ -28,10 +27,8 @@ void EncryptionAuthenticator::Begin(BinaryStream& outstream) {
 
 ConnectResult EncryptionAuthenticator::Handle(BinaryStream& instream, BinaryStream& outstream) {
     // discard auth packets that are currently unexpected (possibly duplicate, or hostile)
-    if (instream.ReadByte() != m_state) {
-        std::cout << "Authenticator state mismatch, origin " << int(m_origin) << std::endl;
+    if (instream.ReadByte() != m_state)
         return ConnectResult::IN_PROGRESS;
-    }
 
     switch (m_state) {
     case STATE_KEY_EXCHANGE:
@@ -55,8 +52,6 @@ void EncryptionAuthenticator::PostHandle() {
 }
 
 ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream, BinaryStream& outstream) {
-    std::cout << "Handle STATE_KEY_EXCHANGE, origin " << int(m_origin) << std::endl;
-
     // read out the remote public key into a buffer
     const auto keylen = cfg::DefaultEncryption::GetKeyLength();
     BinaryStream remoteKey(keylen);
@@ -77,7 +72,6 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
 
         if (m_crypto.GetNeedsChallenge()) {
             // write an auth challenge to the handshaker stream
-            std::cout << "Sending auth challenge" << std::endl;
             outstream.WriteByte(STATE_AUTHENTICATION);
             m_crypto.CreateChallenge(outstream);
             m_state = STATE_AUTHENTICATION;
@@ -98,14 +92,7 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
         m_enableCryptoAfterReply = true;
 
         // client indicates whether they also want to send us an auth challenge
-        if (instream.ReadBool()) {
-            std::cout << "Client desires auth challenge" << std::endl;
-            m_state = STATE_AUTHENTICATION;
-        } else {
-            std::cout << "Client needs no auth challenge" << std::endl;
-            m_state = STATE_DONE;
-            //return ConnectResult::OK;
-        }
+        m_state = instream.ReadBool() ? STATE_AUTHENTICATION : STATE_DONE;
 
         break;
     default:
@@ -117,11 +104,8 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
 }
 
 ConnectResult EncryptionAuthenticator::HandleAuth(BinaryStream& instream, BinaryStream& outstream) {
-    std::cout << "Handle STATE_AUTHENTICATION, origin " << int(m_origin) << std::endl;
-
     if (m_origin == Handshaker::Origin::REMOTE) {
         // incoming challenge, solve it
-        std::cout << "Incoming auth challenge, solving..." << std::endl;
         outstream.WriteByte(STATE_AUTHENTICATION);
         if (!m_crypto.HandleChallengeIncoming(instream, outstream))
             return ConnectResult::INCOMPATIBLE_SECURITY;
@@ -131,7 +115,6 @@ ConnectResult EncryptionAuthenticator::HandleAuth(BinaryStream& instream, Binary
 
     } else {
         // challenge response, verify it
-        std::cout << "Incoming auth response, verifying..." << std::endl;
         auto result = m_crypto.HandleChallengeResponse(instream);
         if (!result) {
             outstream.Clear();

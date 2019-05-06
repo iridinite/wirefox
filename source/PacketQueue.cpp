@@ -191,8 +191,6 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
         // if key exchange was completed already, replace the datagram blob with a ciphertext
         const bool encryptionDesired = crypto && crypto->GetCryptoEstablished();
         if (encryptionDesired) {
-            if (datagram->forceCrypto) std::cout << "Forcing crypto" << std::endl;
-            std::cout << "Encrypting packet" << std::endl;
             datagram->blob = crypto->Encrypt(datagram->blob);
 
             // I don't know why this would happen, but I guess encryption could fail?
@@ -238,7 +236,6 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 
     // if we know the remote, then the message may be encrypted
     if (remote->crypto && remote->crypto->GetCryptoEstablished()) {
-        std::cout << "Decrypting packet" << std::endl;
         inbuffer = remote->crypto->Decrypt(inbuffer);
 
         // the ciphertext might be malformed for several reasons; decryption failure == bad connection

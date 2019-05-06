@@ -84,10 +84,7 @@ void Handshaker::Update() {
 
     // ensure we're not poking at this object from both the packet and socket thread
     std::unique_lock<decltype(m_remote->lock)> lock(m_remote->lock, std::try_to_lock);
-    if (!lock.owns_lock()) {
-        std::cout << "Skip handshaker update" << std::endl;
-        return;
-    }
+    if (!lock.owns_lock()) return;
 
     // There is one edge case where m_lastReply might be empty: if a new remote was reserved for an incoming
     // handshake part, but that handshake was a stage mismatch, so it was silently ignored and no Reply was recorded.

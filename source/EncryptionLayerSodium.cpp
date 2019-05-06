@@ -10,7 +10,7 @@
 #include "EncryptionLayerSodium.h"
 
 #ifdef WIREFOX_ENABLE_ENCRYPTION
-#define WIREFOX_SODIUM_MONITORING 1
+#define WIREFOX_SODIUM_MONITORING 0
 #include <sodium.h>
 
 static constexpr size_t WIREFOX_SODIUM_NONCE_LEN = crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
@@ -27,7 +27,7 @@ namespace {
         return buffer;
     }
 
-#ifdef WIREFOX_SODIUM_MONITORING
+#if WIREFOX_SODIUM_MONITORING
     void PrintKeyToStdout(const char* prefix, uint8_t* key) {
         std::cout << prefix << std::hex;
         for (int i = 0; i < 32; i++)
@@ -155,7 +155,7 @@ size_t EncryptionLayerSodium::GetKeyLength() {
 }
 
 BinaryStream EncryptionLayerSodium::GetEphemeralPublicKey() const {
-#ifdef WIREFOX_SODIUM_MONITORING
+#if WIREFOX_SODIUM_MONITORING
     PrintKeyToStdout("kxpk = ", m_kx->key_public);
 #endif
     BinaryStream ret(KEY_LENGTH);
@@ -166,10 +166,6 @@ BinaryStream EncryptionLayerSodium::GetEphemeralPublicKey() const {
 
 void EncryptionLayerSodium::SetCryptoEstablished() {
     m_established = true;
-
-#ifdef WIREFOX_SODIUM_MONITORING
-    std::cout << "Key exchange complete, encryption enabled" << std::endl;
-#endif
 }
 
 bool EncryptionLayerSodium::GetCryptoEstablished() const {
@@ -184,18 +180,12 @@ void EncryptionLayerSodium::CreateChallenge(BinaryStream& outstream) {
     // state flag to remember we want an answer to this challenge
     m_remoteAuthExpected = true;
 
-    // random nonce
-    //uint8_t nonce[WIREFOX_SODIUM_NONCE_LEN];
-    //randombytes_buf(nonce, sizeof nonce);
-
     // just generate some random bytes to be used as challenge
     uint8_t encrypted[CHALLENGE_LENGTH + crypto_box_SEALBYTES];
     randombytes_buf(m_issued_challenge, CHALLENGE_LENGTH);
-    //crypto_aead_xchacha20poly1305_ietf_encrypt(encrypted, m_issued_challenge, CHALLENGE_LENGTH, nullptr, 0, nullptr, nonce, )
-    //crypto_sign_detached(encrypted, nullptr, m_issued_challenge, CHALLENGE_LENGTH, m_identity->key_secret);
     crypto_box_seal(encrypted, m_issued_challenge, CHALLENGE_LENGTH, m_remote_identity_pk);
 
-#ifdef WIREFOX_SODIUM_MONITORING
+#if WIREFOX_SODIUM_MONITORING
     PrintKeyToStdout("original challenge = ", m_issued_challenge);
     PrintKeyToStdout("encrypt  challenge = ", encrypted);
 #endif
@@ -204,20 +194,15 @@ void EncryptionLayerSodium::CreateChallenge(BinaryStream& outstream) {
 }
 
 bool EncryptionLayerSodium::HandleKeyExchange(Handshaker::Origin origin, BinaryStream& pubkey) {
+    // read remote kx public key
     uint8_t remotekey[KEY_LENGTH];
     pubkey.ReadBytes(remotekey, KEY_LENGTH);
 
-#ifdef WIREFOX_SODIUM_MONITORING
+#if WIREFOX_SODIUM_MONITORING
     PrintKeyToStdout("pk = ", remotekey);
 #endif
 
-    // verify identity of remote, if we know the key already
-    // EDIT: cannot do this here anymore because KX public key has nothing to do with remote identity
-    //if (m_remoteIdentityKnown && sodium_memcmp(remotekey, m_remote_identity_pk, KEY_LENGTH) != 0) {
-    //    // mismatch, remote may be an impostor
-    //    return false;
-    //}
-
+    // compute session keys now that we know all required keys
     switch (origin) {
     case Handshaker::Origin::SELF:
         if (crypto_kx_client_session_keys(m_key_rx, m_key_tx, m_kx->key_public, m_kx->key_secret, remotekey) != 0)
@@ -232,7 +217,7 @@ bool EncryptionLayerSodium::HandleKeyExchange(Handshaker::Origin origin, BinaryS
         break;
     }
 
-#ifdef WIREFOX_SODIUM_MONITORING
+#if WIREFOX_SODIUM_MONITORING
     PrintKeyToStdout("rx = ", m_key_rx);
     PrintKeyToStdout("tx = ", m_key_tx);
 #endif
@@ -256,7 +241,7 @@ bool EncryptionLayerSodium::HandleChallengeIncoming(BinaryStream& instream, Bina
     if (crypto_box_seal_open(decrypted, encrypted, sizeof encrypted, m_identity->key_public, m_identity->key_secret) != 0)
         return false;
 
-#ifdef WIREFOX_SODIUM_MONITORING
+#if WIREFOX_SODIUM_MONITORING
     PrintKeyToStdout("received challenge = ", encrypted);
     PrintKeyToStdout("decrypt  challenge = ", decrypted);
 #endif
