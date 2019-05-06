@@ -7,18 +7,37 @@ Wirefox is a flexible, easy-to-use and no-nonsense networking library.
 - Connection-oriented API
 - Message-oriented delivery
 - Peer-to-peer-style architecture, but also supports client-server model
-- Supports IPv4 and IPv6
-- Supports reliable delivery
+- Supports both IPv4 & IPv6 out of the box
+- Supports reliable delivery of messages
+- Supports encryption, with automatic key exchange and forward secrecy
 - Supports custom channels, to sort and sequence packets
+- Supports LAN discovery, to detect game lobbies etc. on the local network
 
-This library is under active development, and probably not ready to be used in production. Regardless, I'd be happy to hear from you if you have any thoughts or concerns.
+This library is under active development, and might not ready to be used in production. Regardless, I'd love to hear from you if you have any thoughts or concerns!
 
-Planned features:
+## Here's a quick example!
+
+```cpp
+// Set up a server that accepts 1 client
+auto server = wirefox::IPeer::Factory::Create();
+server->SetMaximumIncomingPeers(1);
+server->Bind(wirefox::SocketProtocol::IPv6, port);
+
+// Set up a client
+auto client = wirefox::IPeer::Factory::Create();
+client->Bind(wirefox::SocketProtocol::IPv6, 0);
+
+// Let's go!
+client->Connect("amazing.server.com", port);
+```
+
+### Planned features:
 
 - Custom packet prioritization
-- LAN discovery and pinging
 - Remote procedure calls
-- Encryption
+- Path MTU discovery
+- Packet fragmentation & reassembly
+- And more?
 
 ## Building from source
 
@@ -28,6 +47,10 @@ Planned features:
   (Windows, Linux, most newer game consoles)
 - A C++14-compliant compiler, or newer
 - CMake 3.9 or higher
+
+Additionally, if encryption features are desired:
+
+- [libsodium](https://github.com/jedisct1/libsodium/releases) 1.0.12 or higher
 
 ### Windows
 
@@ -49,4 +72,4 @@ $ make
 
 Alternatively, offline docs can be generated using [Doxygen](http://www.doxygen.nl/). Simply run `doxygen` on the command-line (in the project root folder) to generate documentation in the docs/html folder.
 
-Note that you can enable or disable the internal documentation (e.g. everything that is not part of the public interface) by removing or adding "WIREFOX_INTERNAL" to the ENABLED_SECTIONS variable in Doxyfile. It's enabled by default.
+Note that you can enable or disable the internal documentation (e.g. everything that is not part of the public interface) by removing or adding "WIREFOX_INTERNAL" to the `ENABLED_SECTIONS` variable in Doxyfile. It's enabled by default.
