@@ -1,4 +1,4 @@
-/**
+/*
  * Wirefox Networking API
  * (C) Mika Molenkamp, 2019.
  *
