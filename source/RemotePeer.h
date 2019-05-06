@@ -27,7 +27,7 @@ namespace wirefox {
             RemotePeer();
             ~RemotePeer() = default;
 
-            /// Represents a synchronization primitive. This is used to sync access to the outbox and sentbox.
+            /// Represents a synchronization primitive, used to sync access before most operations.
             cfg::RecursiveMutex lock;
 
             /// A sparse array of channel backlogs. Ordered / sequenced packets may be temporarily held here.
@@ -45,6 +45,9 @@ namespace wirefox {
             /// A handle to the Socket that should be used to send datagrams to \p addr.
             std::shared_ptr<Socket> socket;
 
+            /// A handle to a cryptographic utility class.
+            std::shared_ptr<EncryptionLayer> crypto;
+
             /// A handle to the Handshaker that is to be used for this connection.
             std::unique_ptr<Handshaker> handshake;
 
@@ -53,9 +56,6 @@ namespace wirefox {
 
             /// A handle to an object that services requests for delivery receipts.
             std::unique_ptr<ReceiptTracker> receipt;
-
-            /// A handle to a cryptographic utility class.
-            std::unique_ptr<EncryptionLayer> crypto;
 
             /// The unique ID number of this remote endpoint. May be zero if handshake incomplete.
             PeerID id;

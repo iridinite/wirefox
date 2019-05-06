@@ -101,7 +101,6 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
             return;
         }
 
-        std::cout << "do connect" << std::endl;
         slot->addr = addr;
         slot->socket = std::move(socket);
         SetupRemotePeerCallbacks(slot);
@@ -362,7 +361,7 @@ void Peer::OnSystemPacket(RemotePeer& remote, std::unique_ptr<Packet> packet) {
         OnDisconnect(remote, PacketCommand::NOTIFY_DISCONNECTED);
 
         Packet dc_ack(PacketCommand::DISCONNECT_ACK, nullptr, 0);
-        this->SendOutOfBand(dc_ack, remote.addr);
+        m_queue->EnqueueOutOfBand(dc_ack, remote.addr, &remote);
 
         remote.Reset();
         break;

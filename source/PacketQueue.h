@@ -24,6 +24,7 @@ namespace wirefox {
         struct RemotePeer;
         class Peer;
         class Socket;
+        class EncryptionLayer;
 
         /**
          * \cond WIREFOX_INTERNAL
@@ -33,13 +34,15 @@ namespace wirefox {
          * fragmenting outgoing Packets into segments if necessary, and reassembling incoming Packets.
          */
         class PacketQueue : public std::enable_shared_from_this<PacketQueue> {
+            using CryptoPtr = std::shared_ptr<EncryptionLayer>;
+
         public:
             /// Represents an outbound packet that is not yet assigned to a datagram.
             struct OutgoingPacket {
+                CryptoPtr       crypto;     ///< If not nullptr, force this packet to be encrypted using this crypto layer.
                 BinaryStream    blob;       ///< A byte blob that contains both the packet header and payload.
                 RemoteAddress   addr;       ///< The remote endpoint this packet is addressed to.
                 RemotePeer*     remote;     ///< The peer slot associated with this packet.
-                RemotePeer*     forceCrypto;///< If not nullptr, force this packet to be encrypted using this peer's crypto layer.
                 Timestamp       sendNext;   ///< Indicates when this packet should be treated as lost and resent.
                 unsigned int    sendCount;  ///< Indicates the number of times this packet has been sent.
                 PacketID        id;         ///< The ID number of this datagram, used for resending and acknowledgement.
@@ -51,12 +54,12 @@ namespace wirefox {
 
             /// Represents an outbound datagram that is not yet fully delivered.
             struct OutgoingDatagram {
-                DatagramID      id;         ///< The ID number of this datagram.
-                RemoteAddress   addr;       ///< The remote endpoint this packet is addressed to.
+                CryptoPtr       crypto;     ///< If not nullptr, force this packet to be encrypted using this crypto layer.
                 BinaryStream    blob;       ///< A byte blob that contains both the datagram header and all packets, if any.
+                RemoteAddress   addr;       ///< The remote endpoint this packet is addressed to.
+                DatagramID      id;         ///< The ID number of this datagram.
                 Timestamp       discard;    ///< The timestamp at which this datagram should be removed / cleaned up.
-                RemotePeer*     forceCrypto;///< If not nullptr, force this packet to be encrypted using this peer's crypto layer.
-                std::vector<PacketID> packets;  ///< The list of PacketIDs this datagram contains. Used for acking packets.
+                std::vector<PacketID> packets; ///< The list of PacketIDs this datagram contains. Used for acking packets.
             };
 
             /**

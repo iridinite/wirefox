@@ -70,7 +70,11 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
 
     switch (m_origin) {
     case Handshaker::Origin::SELF:
-        // server just sent us their part of the key xchg, so now move on to auth if that's required
+        // server just sent us their part of the key xchg
+
+        // our next message must be sent with crypto! only kx is done unencrypted
+        m_crypto.SetCryptoEstablished();
+
         if (m_crypto.GetNeedsChallenge()) {
             // write an auth challenge to the handshaker stream
             std::cout << "Sending auth challenge" << std::endl;
@@ -80,7 +84,6 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
         } else {
             // no auth required, send final ack
             m_state = STATE_DONE;
-            m_crypto.SetCryptoEstablished(); // and that final ack must be sent with crypto! only kx is done unencrypted
             outstream.WriteByte(STATE_DONE);
             return ConnectResult::OK;
         }
@@ -123,14 +126,17 @@ ConnectResult EncryptionAuthenticator::HandleAuth(BinaryStream& instream, Binary
         if (!m_crypto.HandleChallengeIncoming(instream, outstream))
             return ConnectResult::INCOMPATIBLE_SECURITY;
 
+        m_state = STATE_DONE;
         return ConnectResult::IN_PROGRESS;
 
     } else {
         // challenge response, verify it
         std::cout << "Incoming auth response, verifying..." << std::endl;
         auto result = m_crypto.HandleChallengeResponse(instream);
-        if (!result)
+        if (!result) {
+            outstream.Clear();
             return ConnectResult::INCORRECT_REMOTE_IDENTITY;
+        }
 
         // all good! send final ack
         m_state = STATE_DONE;

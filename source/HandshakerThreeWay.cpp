@@ -141,7 +141,8 @@ void HandshakerThreeWay::Handle(const Packet& packet) {
         auto authresult = m_auth->Handle(instream, reply);
 
         // send intermediate messages to remote party
-        Reply(std::move(reply));
+        if (!reply.IsEmpty())
+            Reply(std::move(reply));
         m_auth->PostHandle();
 
         // mark handshake result

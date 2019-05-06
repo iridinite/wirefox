@@ -49,7 +49,7 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     meta.id = nextPacketID;
     meta.addr = remote->addr;
     meta.remote = remote;
-    meta.forceCrypto = nullptr;
+    meta.crypto = nullptr;
     meta.options = options;
     meta.sendNext = Time::Now();
     meta.sendCount = 0;
@@ -88,7 +88,7 @@ void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& ad
     meta.addr = addr;
     meta.options = PacketOptions::UNRELIABLE;
     meta.remote = &m_peer->GetRemoteByIndex(0);
-    meta.forceCrypto = forceCryptoBy;
+    meta.crypto = (forceCryptoBy != nullptr) ? forceCryptoBy->crypto : nullptr;
     meta.sendNext = Time::Now();
     meta.sendCount = 0;
 
@@ -134,6 +134,8 @@ void PacketQueue::ThreadWorker() {
         for (size_t i = 0; i <= remotesMax; i++) {
             auto& remote = m_peer->GetRemoteByIndex(i);
             if (!remote.active) continue;
+
+            WIREFOX_LOCK_GUARD(remote.lock);
 
             // give the handshaker the opportunity to resend possibly lost packets
             if (remote.handshake && !remote.handshake->IsDone())
@@ -182,8 +184,8 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     // encrypt this datagram if that's enabled
     if (m_peer->GetEncryptionEnabled()) {
         // get correct crypto layer for this packet -- if DatagramBuilder set an explicit crypto layer, use that one
-        EncryptionLayer* crypto = (datagram->forceCrypto != nullptr)
-            ? datagram->forceCrypto->crypto.get()
+        EncryptionLayer* crypto = (datagram->crypto != nullptr)
+            ? datagram->crypto.get()
             : remote.crypto.get();
 
         // if key exchange was completed already, replace the datagram blob with a ciphertext
