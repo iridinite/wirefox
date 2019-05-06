@@ -12,7 +12,9 @@ namespace {
             return "Communication error: incompatible Wirefox version.";
         case wirefox::ConnectResult::INCOMPATIBLE_SECURITY:
             return "Communication error: incompatible security settings.";
-        case wirefox::ConnectResult::INVALID_PASSWORD:
+        case wirefox::ConnectResult::INCORRECT_REMOTE_IDENTITY:
+            return "Communication error: unable to verify server identity.";
+        case wirefox::ConnectResult::INCORRECT_PASSWORD:
             return "The password is incorrect.";
         case wirefox::ConnectResult::NO_FREE_SLOTS:
             return "The server is full.";
@@ -34,8 +36,9 @@ ChatClient::ChatClient(unsigned short port)
     , m_port(port)
     , m_connected(false) {
     m_peer = wirefox::IPeer::Factory::Create();
-    m_peer->Bind(wirefox::SocketProtocol::IPv4, 0); // bind to any port, doesn't matter for client
     m_peer->SetNetworkSimulation(0.1f, 5);
+    m_peer->SetEncryptionEnabled(true);
+    m_peer->Bind(wirefox::SocketProtocol::IPv4, 0); // bind to any port, doesn't matter for client
 
     m_channelChat = m_peer->MakeChannel(wirefox::ChannelMode::ORDERED);
 }
@@ -90,7 +93,7 @@ void ChatClient::Connect(const std::string& host, unsigned short port) {
         return;
     }
 
-    auto attempt = m_peer->Connect(host, port);
+    auto attempt = m_peer->Connect(host, port, SERVER_KEY_PUBLIC);
     switch (attempt) {
     case wirefox::ConnectAttemptResult::OK:
         std::cout << "Hold on..." << std::endl;

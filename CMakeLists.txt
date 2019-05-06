@@ -5,6 +5,7 @@ if (POLICY CMP0076)
   cmake_policy(SET CMP0076 NEW) # target_sources makes paths absolute
 endif()
 
+option(ENABLE_ENCRYPTION "Enable cryptographic features. Requires libsodium." OFF)
 option(BUILD_SHARED_LIBS "Make shared library instead of static library" OFF)
 option(BUILD_C_BINDINGS "Build the C bindings library. You need this if you want to use C#." ON)
 option(BUILD_CSHARP_BINDINGS "Build the C# bindings library. Requires a C# compiler, obviously." OFF)
@@ -50,6 +51,13 @@ target_link_libraries(Wirefox PRIVATE wirefox-platform-interface)
 # import native threading library
 find_package(Threads REQUIRED)
 target_link_libraries(Wirefox PRIVATE Threads::Threads)
+
+# import libsodium for cryptography
+if(ENABLE_ENCRYPTION)
+  find_package(sodium REQUIRED)
+  target_link_libraries(Wirefox PRIVATE sodium)
+  add_definitions(-DWIREFOX_ENABLE_ENCRYPTION)
+endif()
 
 # can't get pch to work on gcc/clang for now so just leave it I guess
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

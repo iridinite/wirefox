@@ -8,14 +8,31 @@ configuration:
 - Debug
 - RelWithDebInfo
 
+install:
+  # install libsodium
+- ps: >-
+    if(!(Test-Path -Path "deps")){
+    mkdir deps;
+    cd deps;
+    appveyor-retry appveyor DownloadFile https://download.libsodium.org/libsodium/releases/libsodium-1.0.17-stable-msvc.zip -FileName libsodium.zip;
+    7z x libsodium.zip -olibsodium;
+    del libsodium.zip;
+    cd ..
+    }
+- cmd: set sodium_DIR=%APPVEYOR_BUILD_FOLDER%\deps\libsodium
+
+cache:
+  # preserve deps folder, but clear if this script changes
+  - deps -> appveyor.yml
+
 before_build:
   - mkdir build
   - cd build
-  - cmake -G "Visual Studio 15 2017 Win64" ..\ -DWARNINGS_PEDANTIC=1 -DWARNINGS_AS_ERRORS=1 -DBUILD_TESTS=1
+  - cmake -G "Visual Studio 15 2017 Win64" ..\ -DENABLE_ENCRYPTION=1 -Dsodium_USE_STATIC_LIBS=1 -DWARNINGS_PEDANTIC=1 -DWARNINGS_AS_ERRORS=1 -DBUILD_TESTS=1
 
 build:
   verbosity: minimal
   project: $(APPVEYOR_BUILD_FOLDER)\build\$(APPVEYOR_PROJECT_NAME).sln
 
-#test_script:
-  #- '%APPVEYOR_BUILD_FOLDER%\build\tests\%CONFIGURATION%\tests.exe'
+test_script:
+  - '%APPVEYOR_BUILD_FOLDER%\build\tests\%CONFIGURATION%\tests.exe'

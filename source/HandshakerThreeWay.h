@@ -31,7 +31,7 @@ namespace wirefox {
              */
             HandshakerThreeWay(Peer* master, RemotePeer* remote, Origin origin)
                 : Handshaker(master, remote, origin)
-                , m_status(NOT_STARTED) {}
+                , m_expectedOpcode(NOT_STARTED) {}
 
             void            Begin() override;
             void            Handle(const Packet& packet) override;
@@ -49,10 +49,14 @@ namespace wirefox {
             static void     WriteReplyHeader(BinaryStream& outstream, PeerID myID);
             void            ReplyWithError(BinaryStream& outstream, ConnectResult problem);
 
-            enum {
+            enum : uint8_t {
                 NOT_STARTED,
-                AWAITING_ACK
-            }               m_status;
+                INITIAL_CLIENT,
+                INITIAL_SERVER,
+                AUTH_MSG,
+                UNENCRYPTED_ACK,
+                ERROR_OCCURRED
+            } m_expectedOpcode;
         };
 
         /// \endcond

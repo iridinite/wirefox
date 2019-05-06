@@ -29,12 +29,15 @@ Peer::Peer(size_t maxPeers)
     , m_masterSocket(cfg::DefaultSocket::Create())
     , m_remotes(std::unique_ptr<RemotePeer[]>(new RemotePeer[m_remotesMax]))
     , m_queue(std::make_shared<PacketQueue>(this))
-    , m_channels{ChannelMode::UNORDERED} {}
+    , m_channels{ChannelMode::UNORDERED}
+    , m_crypto_enabled(false) {}
 
 Peer::Peer(Peer&& other) noexcept
     : m_id(0)
     , m_remotesMax(0)
-    , m_remotesIncoming(0) {
+    , m_remotesIncoming(0)
+    , m_advertisement(0)
+    , m_crypto_enabled(false) {
     *this = std::move(other);
 }
 
@@ -72,11 +75,23 @@ Peer& Peer::operator=(Peer&& other) noexcept {
     return *this;
 }
 
-ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port) {
+ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const uint8_t* public_key) {
     auto* slot = GetNextAvailableConnectSlot();
     if (!slot) return ConnectAttemptResult::NO_FREE_SLOTS;
 
     slot->Setup(this, Handshaker::Origin::SELF);
+
+    if (public_key) {
+        // cannot specify public key while also having crypto disabled, that's silly
+        if (!GetEncryptionEnabled()) {
+            slot->Reset();
+            return ConnectAttemptResult::INVALID_PARAMETER;
+        }
+
+        // tell this remote's crypto layer to expect this exact public key
+        BinaryStream public_key_stream(public_key, cfg::DefaultEncryption::GetKeyLength(), BinaryStream::WrapMode::READONLY);
+        slot->crypto->ExpectRemoteIdentity(public_key_stream);
+    }
 
     auto ret = m_masterSocket->Connect(host, port, [this, slot](bool error, RemoteAddress addr, std::shared_ptr<Socket> socket, std::string) {
         if (error) {
@@ -171,7 +186,7 @@ void Peer::Ping(const std::string& hostname, uint16_t port) const {
     if (!m_masterSocket->Resolve(hostname, port, addr)) return;
 
     Packet ping(PacketCommand::PING, nullptr, 0);
-    m_queue->EnqueueOutOfBand(ping, addr);
+    m_queue->EnqueueOutOfBand(ping, addr, nullptr);
 }
 
 void Peer::PingLocalNetwork(uint16_t port) const {
@@ -190,8 +205,61 @@ void Peer::PingLocalNetwork(uint16_t port) const {
     Ping(multicast, port);
 }
 
+void Peer::SetEncryptionEnabled(bool enabled) {
+    // settings cannot be changed after the socket is bound
+    if (m_masterSocket->IsOpenAndReady()) return;
+
+#ifdef WIREFOX_ENABLE_ENCRYPTION
+    if (enabled) {
+        // generate a random keypair and enable crypto
+        m_crypto_identity = cfg::DefaultEncryption::Keypair::CreateIdentity();
+        m_crypto_enabled = true;
+    } else {
+        // release keypair
+        m_crypto_identity = nullptr;
+        m_crypto_enabled = false;
+    }
+#else
+    (void)enabled;
+    m_crypto_enabled = false;
+#endif
+}
+
+void Peer::SetEncryptionIdentity(const uint8_t* key_secret, const uint8_t* key_public) {
+    if (!m_crypto_enabled) return;
+
+#ifdef WIREFOX_ENABLE_ENCRYPTION
+    m_crypto_identity = std::make_shared<cfg::DefaultEncryption::Keypair>(key_secret, key_public);
+#else
+    (void)key_secret;
+    (void)key_public;
+#endif
+}
+
+void Peer::GenerateIdentity(uint8_t* key_secret, uint8_t* key_public) const {
+#ifdef WIREFOX_ENABLE_ENCRYPTION
+    auto keypair = cfg::DefaultEncryption::Keypair::CreateIdentity();
+    keypair->CopyTo(key_secret, key_public);
+#else
+    (void)key_secret;
+    (void)key_public;
+#endif
+}
+
+size_t Peer::GetEncryptionKeyLength() const {
+    return cfg::DefaultEncryption::GetKeyLength();
+}
+
+bool Peer::GetEncryptionEnabled() const {
+    return m_crypto_enabled;
+}
+
+std::shared_ptr<EncryptionLayer::Keypair> Peer::GetEncryptionIdentity() const {
+    return m_crypto_identity;
+}
+
 void Peer::SendOutOfBand(const Packet& packet, const RemoteAddress& addr) {
-    m_queue->EnqueueOutOfBand(packet, addr);
+    m_queue->EnqueueOutOfBand(packet, addr, nullptr);
 }
 
 std::unique_ptr<Packet> Peer::Receive() {
@@ -293,7 +361,7 @@ void Peer::OnSystemPacket(RemotePeer& remote, std::unique_ptr<Packet> packet) {
         OnDisconnect(remote, PacketCommand::NOTIFY_DISCONNECTED);
 
         Packet dc_ack(PacketCommand::DISCONNECT_ACK, nullptr, 0);
-        m_queue->EnqueueOutOfBand(dc_ack, remote.addr);
+        m_queue->EnqueueOutOfBand(dc_ack, remote.addr, &remote);
 
         remote.Reset();
         break;
@@ -418,9 +486,15 @@ void Peer::SetupRemotePeerCallbacks(RemotePeer* remote) {
     remote->handshake->SetCompletionHandler(std::bind(&Peer::SendHandshakeCompleteNotification, this, remote, _1));
 }
 
-void Peer::SendHandshakePart(const RemotePeer* remote, BinaryStream&& outstream) {
+void Peer::SendHandshakePart(RemotePeer* remote, BinaryStream&& outstream) {
+    assert(remote->crypto);
+
+    // check crypto status HERE, not in PacketQueue/DatagramBuilder, because for the S->C key exchange,
+    // crypto will be enabled right after this function returns, but that kx packet should not be encrypted yet
+    RemotePeer* forceCryptoBy = remote->crypto->GetCryptoEstablished() ? remote : nullptr;
+
     Packet packet(PacketCommand::CONNECT_ATTEMPT, std::move(outstream));
-    this->SendOutOfBand(packet, remote->addr);
+    m_queue->EnqueueOutOfBand(packet, remote->addr, forceCryptoBy);
 }
 
 void Peer::SendHandshakeCompleteNotification(RemotePeer* remote, Packet&& notification) {

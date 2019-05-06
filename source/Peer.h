@@ -9,6 +9,7 @@
 #pragma once
 #include "PeerAbstract.h"
 #include "PacketQueue.h"
+#include "EncryptionLayer.h"
 
 namespace wirefox {
 
@@ -44,7 +45,7 @@ namespace wirefox {
             /// Move assignment operator.
             Peer& operator=(Peer&&) noexcept;
 
-            ConnectAttemptResult        Connect(const std::string& host, uint16_t port) override;
+            ConnectAttemptResult        Connect(const std::string& host, uint16_t port, const uint8_t* public_key) override;
             bool                        Bind(SocketProtocol family, uint16_t port) override;
             void                        Disconnect(PeerID who, Timespan linger) override;
             void                        DisconnectImmediate(PeerID who) override;
@@ -68,6 +69,13 @@ namespace wirefox {
             void                        DisableOfflineAdvertisement() override;
             void                        Ping(const std::string& hostname, uint16_t port) const override;
             void                        PingLocalNetwork(uint16_t port) const override;
+
+            void                        SetEncryptionEnabled(bool enabled) override;
+            void                        SetEncryptionIdentity(const uint8_t* key_secret, const uint8_t* key_public) override;
+            void                        GenerateIdentity(uint8_t* key_secret, uint8_t* key_public) const override;
+            size_t                      GetEncryptionKeyLength() const override;
+            bool                        GetEncryptionEnabled() const;
+            std::shared_ptr<EncryptionLayer::Keypair> GetEncryptionIdentity() const;
 
             /**
              * \brief Sends an unconnected packet to an arbitrary remote endpoint.
@@ -182,7 +190,7 @@ namespace wirefox {
 
         private:
             void                        SetupRemotePeerCallbacks(RemotePeer* remote);
-            void                        SendHandshakePart(const RemotePeer* remote, BinaryStream&& outstream);
+            void                        SendHandshakePart(RemotePeer* remote, BinaryStream&& outstream);
             void                        SendHandshakeCompleteNotification(RemotePeer* remote, Packet&& notification);
 
             static PeerID               GeneratePeerID();
@@ -207,6 +215,9 @@ namespace wirefox {
             std::shared_ptr<PacketQueue>    m_queue;
             std::map<PeerID, RemotePeer*>   m_remoteLookup;
             std::vector<ChannelMode>        m_channels;
+
+            std::shared_ptr<EncryptionLayer::Keypair> m_crypto_identity;
+            bool m_crypto_enabled;
         };
 
         /// \endcond

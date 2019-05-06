@@ -163,14 +163,15 @@ void BinaryStream::Clear() {
 }
 
 std::unique_ptr<uint8_t[]> BinaryStream::ToArray() const {
-    auto ret = std::unique_ptr<uint8_t[]>(new uint8_t[m_length]);
     const auto bufferlen = m_length * sizeof(decltype(*m_buffer));
+    auto ret = std::unique_ptr<uint8_t[]>(new uint8_t[bufferlen]);
     memcpy(ret.get(), m_buffer, bufferlen);
     return ret;
 }
 
 std::unique_ptr<uint8_t[]> BinaryStream::ReleaseBuffer(size_t* length) noexcept {
     if (m_readonly) return nullptr;
+    Align();
 
     // fill in length output if specified
     if (length)
@@ -194,8 +195,8 @@ void BinaryStream::Write(ISerializable& obj) {
 
 void BinaryStream::WriteByte(const uint8_t val) {
     if (m_readonly) return;
-    Ensure(1);
     Align();
+    Ensure(1);
     m_buffer[m_position++] = val;
     m_length = std::max(m_length, m_position);
 }
@@ -204,10 +205,19 @@ void BinaryStream::WriteBytes(const BinaryStream& other) {
     WriteBytes(other.m_buffer_ro, other.m_length);
 }
 
+void BinaryStream::WriteZeroes(size_t len) {
+    if (m_readonly) return;
+    Align();
+    Ensure(len);
+    memset(m_buffer + m_position, 0, len);
+    m_position += len;
+    m_length = std::max(m_length, m_position);
+}
+
 void BinaryStream::WriteBytes(const void* addr, const size_t len) {
     if (m_readonly) return;
-    Ensure(len);
     Align();
+    Ensure(len);
     memcpy(m_buffer + m_position, addr, len);
     m_position += len;
     m_length = std::max(m_length, m_position);
@@ -271,6 +281,9 @@ void BinaryStream::WriteBool(bool val) {
         m_position++;
         m_subBytePosition = 0;
         m_length = std::max(m_length, m_position);
+
+    } else {
+        m_length = std::max(m_length, m_position + 1);
     }
 }
 

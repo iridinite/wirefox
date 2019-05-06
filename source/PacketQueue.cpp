@@ -49,6 +49,7 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     meta.id = nextPacketID;
     meta.addr = remote->addr;
     meta.remote = remote;
+    meta.crypto = nullptr;
     meta.options = options;
     meta.sendNext = Time::Now();
     meta.sendCount = 0;
@@ -78,7 +79,7 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     return nextPacketID;
 }
 
-void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr) {
+void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr, RemotePeer* forceCryptoBy) {
     // somewhat arbitrary number, but the point is that out-of-band packets cannot be split
     assert(packet.GetLength() < cfg::MTU - 100);
 
@@ -87,6 +88,7 @@ void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& ad
     meta.addr = addr;
     meta.options = PacketOptions::UNRELIABLE;
     meta.remote = &m_peer->GetRemoteByIndex(0);
+    meta.crypto = (forceCryptoBy != nullptr) ? forceCryptoBy->crypto : nullptr;
     meta.sendNext = Time::Now();
     meta.sendCount = 0;
 
@@ -133,14 +135,16 @@ void PacketQueue::ThreadWorker() {
             auto& remote = m_peer->GetRemoteByIndex(i);
             if (!remote.active) continue;
 
+            WIREFOX_LOCK_GUARD(remote.lock);
+
             // give the handshaker the opportunity to resend possibly lost packets
             if (remote.handshake && !remote.handshake->IsDone())
                 remote.handshake->Update();
             // various periodic updates
-            if (remote.IsConnected()) {
+            if (remote.congestion)
                 remote.congestion->Update();
+            if (remote.receipt)
                 remote.receipt->Update();
-            }
 
             // disconnection timeout
             auto timeout = remote.disconnect.load();
@@ -177,6 +181,26 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     OutgoingDatagram* datagram = remote.GetNextDatagram(m_peer);
     if (!datagram) return;
 
+    // encrypt this datagram if that's enabled
+    if (m_peer->GetEncryptionEnabled()) {
+        // get correct crypto layer for this packet -- if DatagramBuilder set an explicit crypto layer, use that one
+        EncryptionLayer* crypto = (datagram->crypto != nullptr)
+            ? datagram->crypto.get()
+            : remote.crypto.get();
+
+        // if key exchange was completed already, replace the datagram blob with a ciphertext
+        const bool encryptionDesired = crypto && crypto->GetCryptoEstablished();
+        if (encryptionDesired) {
+            datagram->blob = crypto->Encrypt(datagram->blob);
+
+            // I don't know why this would happen, but I guess encryption could fail?
+            if (crypto->GetNeedsToBail()) {
+                m_peer->DisconnectImmediate(&remote);
+                return;
+            }
+        }
+    }
+
     // dispatch an async write op for this remote
     remote.congestion->NotifySendingBytes(datagram->id, datagram->blob.GetLength());
     remote.socket->BeginWrite(datagram->addr, datagram->blob.GetBuffer(), datagram->blob.GetLength(),
@@ -208,8 +232,22 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
         return;
     }
 
-    // decode the datagram header if it is complete
     BinaryStream inbuffer(buffer, transferred, BinaryStream::WrapMode::READONLY);
+
+    // if we know the remote, then the message may be encrypted
+    if (remote->crypto && remote->crypto->GetCryptoEstablished()) {
+        inbuffer = remote->crypto->Decrypt(inbuffer);
+
+        // the ciphertext might be malformed for several reasons; decryption failure == bad connection
+        // TODO: Vulnerability to TCP-reset-style attack: an adversary could intentially inject a corrupt datagram. Is this a problem?
+        // TODO: I currently don't think so; if the goal is to kill comms, they could also just intercept & discard all datagrams.
+        if (remote->crypto->GetNeedsToBail()) {
+            m_peer->DisconnectImmediate(remote);
+            return;
+        }
+    }
+
+    // decode the datagram header if it is complete
     DatagramHeader datagramHeader;
     if (!datagramHeader.Deserialize(inbuffer)) {
         std::cerr << "PacketQueue: [Remote " << std::to_string(remote->id) << "] Received corrupt or incomplete datagram. Killing connection." << std::endl;
@@ -228,7 +266,7 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 
     // handle offline messages separately (unconnected pings, or handshake fragment)
     if (!datagramHeader.flag_link) {
-        m_peer->OnUnconnectedMessage(sender, buffer, transferred);
+        m_peer->OnUnconnectedMessage(sender, inbuffer);
         return;
     }
 

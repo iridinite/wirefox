@@ -23,11 +23,11 @@ namespace wirefox {
         /// The connection attempt was initiated successfully.
         /// \note This does not imply that the connection was actually opened, only that the \a attempt was started.
         OK,
-        /// Invalid settings were passed to Socket::Connect(). The host-name must be non-empty, and the port must be non-zero.
+        /// Invalid settings were specified. Hostname must be non-empty, port must be non-zero, and explicit public key requires enabling crypto.
         INVALID_PARAMETER,
         /// The resolver could not resolve the host name into an endpoint.
         INVALID_HOSTNAME,
-        /// The socket was not ready to begin a connection. For UDP, the socket must be bound to a local port first.
+        /// The socket was not ready to begin a connection. Make sure it is successfully bound to a port.
         INVALID_STATE,
         /// You are already trying to connect to this endpoint. Wait for a NOTIFY_CONNECT_* notification.
         ALREADY_CONNECTING,
@@ -49,10 +49,12 @@ namespace wirefox {
         INCOMPATIBLE_PROTOCOL,
         /// The remote endpoint is not running the same version of Wirefox.
         INCOMPATIBLE_VERSION,
-        /// The remote endpoint has different security settings than we do.
+        /// The remote endpoint has different security settings than we do, or an error occurred during encryption or decryption.
         INCOMPATIBLE_SECURITY,
+        /// The identity of the remote endpoint could not be verified. Likely causes are a configuration error, or an active MITM-attack.
+        INCORRECT_REMOTE_IDENTITY,
         /// The remote endpoint rejected the password.
-        INVALID_PASSWORD,
+        INCORRECT_PASSWORD,
         /// The remote endpoint has no free slots left to connect with us (or does not accept any connections at all). Try again later.
         NO_FREE_SLOTS,
         /// The remote endpoint is already connected with us (or with someone else with the same PeerID).

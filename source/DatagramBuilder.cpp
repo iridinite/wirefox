@@ -112,6 +112,7 @@ PacketQueue::OutgoingDatagram* DatagramBuilder::MakeDatagram(RemotePeer& remote,
     PacketQueue::OutgoingDatagram datagram;
     datagram.id = remote.congestion->GetNextDatagramID();
     datagram.addr = sendQueue[0]->addr; // TODO: is this ok?
+    datagram.crypto = sendQueue[0]->crypto; // should only ever be set for some OOB packets
     datagram.discard = Time::Now() + Time::FromSeconds(5);
 
     DatagramHeader header;
@@ -167,6 +168,7 @@ PacketQueue::OutgoingDatagram* DatagramBuilder::MakeAckgram(RemotePeer& remote) 
     ackgram.addr = remote.addr;
     ackgram.id = remote.congestion->GetNextDatagramID();
     ackgram.discard = Time::Now() + Time::FromSeconds(1);
+    ackgram.crypto = nullptr;
 
     // build and write a datagram containing these acks
     DatagramHeader header;

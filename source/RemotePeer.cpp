@@ -11,6 +11,7 @@
 #include "WirefoxConfigRefs.h"
 #include "DatagramBuilder.h"
 #include "Peer.h"
+#include "EncryptionLayerNull.h"
 
 using namespace detail;
 
@@ -122,8 +123,11 @@ void RemotePeer::Setup(Peer* master, Handshaker::Origin origin) {
     receipt = std::make_unique<ReceiptTracker>(master, *this);
 
     // used by remote #0 to stop handshake from being instantiated, as out-of-band comms should not do handshakes
-    if (origin != Handshaker::Origin::INVALID)
+    if (origin != Handshaker::Origin::INVALID) {
+        crypto = std::make_shared<cfg::DefaultEncryption>();
+        crypto->SetLocalIdentity(master->GetEncryptionIdentity());
         handshake = std::make_unique<cfg::DefaultHandshaker>(master, this, origin);
+    }
 }
 
 void RemotePeer::Reset() {
@@ -136,6 +140,7 @@ void RemotePeer::Reset() {
     socket = nullptr;
     handshake = nullptr;
     congestion = nullptr;
+    crypto = nullptr;
     receipt = nullptr;
     outbox.clear();
     sentbox.clear();
