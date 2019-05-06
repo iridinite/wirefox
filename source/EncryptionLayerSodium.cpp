@@ -13,7 +13,7 @@
 #define WIREFOX_SODIUM_MONITORING 0
 #include <sodium.h>
 
-static constexpr size_t WIREFOX_SODIUM_NONCE_LEN = crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
+static constexpr size_t WIREFOX_SODIUM_NONCE_LEN = crypto_secretbox_xchacha20poly1305_NONCEBYTES;
 static constexpr size_t WIREFOX_SODIUM_MAC_LEN = crypto_secretbox_xchacha20poly1305_MACBYTES;
 
 using namespace detail;
@@ -272,8 +272,7 @@ BinaryStream EncryptionLayerSodium::Encrypt(const BinaryStream& plaintext) {
     ciphertext.WriteBytes(nonce, sizeof nonce);
 
     // encrypt the plaintext and write it to the output BinaryStream
-    //crypto_aead_xchacha20poly1305_ietf_encrypt()
-    crypto_secretbox_easy(ciphertext_ptr, plaintext.GetBuffer(), plaintext.GetLength(), nonce, m_key_tx);
+    crypto_secretbox_xchacha20poly1305_easy(ciphertext_ptr, plaintext.GetBuffer(), plaintext.GetLength(), nonce, m_key_tx);
 
     ciphertext.SeekToBegin();
     return ciphertext;
@@ -301,7 +300,7 @@ BinaryStream EncryptionLayerSodium::Decrypt(BinaryStream& ciphertext) {
     assert(plaintext.GetCapacity() >= plaintext_len);
 
     // perform decryption
-    if (crypto_secretbox_open_easy(plaintext.GetWritableBuffer(), ciphertext_ptr, ciphertext_len, nonce, m_key_rx) != 0)
+    if (crypto_secretbox_xchacha20poly1305_open_easy(plaintext.GetWritableBuffer(), ciphertext_ptr, ciphertext_len, nonce, m_key_rx) != 0)
         m_error = true;
 
     return plaintext;
