@@ -10,8 +10,8 @@
 #include "RemotePeer.h"
 #include "WirefoxConfigRefs.h"
 #include "DatagramBuilder.h"
+#include "EncryptionAuthenticator.h"
 #include "Peer.h"
-#include "EncryptionLayerNull.h"
 
 using namespace detail;
 

@@ -33,6 +33,13 @@ namespace wirefox {
             bool HandleKeyExchange(Handshaker::Origin, BinaryStream&) override { return true; }
             void ExpectRemoteIdentity(BinaryStream&) override {}
 
+            void SetCryptoEstablished() override {}
+            bool GetCryptoEstablished() const override { return false; }
+            bool GetNeedsChallenge() const override { return false; }
+            void CreateChallenge(BinaryStream&) override {}
+            bool HandleChallengeIncoming(BinaryStream&, BinaryStream&) override { return true; }
+            bool HandleChallengeResponse(BinaryStream&) override { return true; }
+
             BinaryStream Encrypt(const BinaryStream& plaintext) override { return plaintext; }
             BinaryStream Decrypt(BinaryStream& ciphertext) override { return ciphertext; }
             void SetLocalIdentity(std::shared_ptr<Keypair>) override {}

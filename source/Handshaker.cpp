@@ -11,7 +11,7 @@
 #include "Packet.h"
 #include "Peer.h"
 #include "RemotePeer.h"
-#include "WirefoxConfigRefs.h"
+#include "EncryptionAuthenticator.h"
 
 using namespace wirefox::detail;
 

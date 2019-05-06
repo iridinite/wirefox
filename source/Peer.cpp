@@ -12,6 +12,7 @@
 #include "RemotePeer.h"
 #include "PacketHeader.h"
 #include "WirefoxConfigRefs.h"
+#include "EncryptionAuthenticator.h"
 #include "DatagramHeader.h"
 #include "Channel.h"
 
