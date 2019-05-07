@@ -13,7 +13,7 @@
 #include "Wirefox.h"
 
 namespace {
-    
+
     IPeer* HandleToPeer(HWirefoxPeer* handle) {
         return reinterpret_cast<IPeer*>(handle);
     }
@@ -141,6 +141,43 @@ int wirefox_peer_get_ping_available(HWirefoxPeer* handle, TPeerID who) {
 
 void wirefox_peer_set_network_sim(HWirefoxPeer* handle, float packetLoss, unsigned additionalPing) {
     HandleToPeer(handle)->SetNetworkSimulation(packetLoss, additionalPing);
+}
+
+void wirefox_peer_set_offline_ad(HWirefoxPeer* handle, const uint8_t* data, size_t len) {
+    BinaryStream ad(data, len, BinaryStream::WrapMode::READONLY);
+    HandleToPeer(handle)->SetOfflineAdvertisement(ad);
+}
+
+void wirefox_peer_disable_offline_ad(HWirefoxPeer* handle) {
+    HandleToPeer(handle)->DisableOfflineAdvertisement();
+}
+
+void wirefox_peer_ping(HWirefoxPeer* handle, const char* host, uint16_t port) {
+    HandleToPeer(handle)->Ping(host, port);
+}
+
+void wirefox_peer_ping_local_network(HWirefoxPeer* handle, uint16_t port) {
+    HandleToPeer(handle)->PingLocalNetwork(port);
+}
+
+size_t wirefox_peer_get_crypto_key_length(HWirefoxPeer* handle) {
+    return HandleToPeer(handle)->GetEncryptionKeyLength();
+}
+
+int wirefox_peer_get_crypto_enabled(HWirefoxPeer* handle) {
+    return HandleToPeer(handle)->GetEncryptionEnabled() ? 1 : 0;
+}
+
+void wirefox_peer_set_crypto_enabled(HWirefoxPeer* handle, int enabled) {
+    HandleToPeer(handle)->SetEncryptionEnabled(enabled != 0);
+}
+
+void wirefox_peer_set_crypto_identity(HWirefoxPeer* handle, const uint8_t* key_secret, const uint8_t* key_public) {
+    HandleToPeer(handle)->SetEncryptionIdentity(key_secret, key_public);
+}
+
+void wirefox_peer_generate_crypto_identity(HWirefoxPeer* handle, uint8_t* key_secret, uint8_t* key_public) {
+    HandleToPeer(handle)->GenerateIdentity(key_secret, key_public);
 }
 
 HPacket* wirefox_packet_create(uint8_t cmd, const uint8_t* data, size_t len) {

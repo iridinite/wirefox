@@ -7,6 +7,7 @@
  */
 
 using System;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 
 namespace Iridinite.Wirefox {
@@ -23,7 +24,7 @@ namespace Iridinite.Wirefox {
         private IntPtr m_handle;
 
         public Peer(int maxPeers) {
-            m_handle = NativeMethods.wirefox_peer_create(new UIntPtr((uint)maxPeers));
+            m_handle = NativeMethods.wirefox_peer_create(new UIntPtr((uint) maxPeers));
         }
 
         ~Peer() {
@@ -43,7 +44,7 @@ namespace Iridinite.Wirefox {
         /// </remarks>
         /// <param name="linger"></param>
         public void Stop(TimeSpan linger) {
-            NativeMethods.wirefox_peer_stop(m_handle, (uint)linger.TotalMilliseconds);
+            NativeMethods.wirefox_peer_stop(m_handle, (uint) linger.TotalMilliseconds);
         }
 
         /// <summary>Bind this peer to a local network interface.</summary>
@@ -68,7 +69,7 @@ namespace Iridinite.Wirefox {
         }
 
         public void Disconnect(PeerID who, TimeSpan linger) {
-            NativeMethods.wirefox_peer_disconnect(m_handle, who, (uint)linger.TotalMilliseconds);
+            NativeMethods.wirefox_peer_disconnect(m_handle, who, (uint) linger.TotalMilliseconds);
         }
 
         public void DisconnectImmediate(PeerID who) {
@@ -116,11 +117,11 @@ namespace Iridinite.Wirefox {
         }
 
         public void SetMaxIncomingPeers(int incoming) {
-            NativeMethods.wirefox_peer_set_max_incoming_peers(m_handle, new UIntPtr((uint)incoming));
+            NativeMethods.wirefox_peer_set_max_incoming_peers(m_handle, new UIntPtr((uint) incoming));
         }
 
         public int GetPing(PeerID who) {
-            return (int)NativeMethods.wirefox_peer_get_ping(m_handle, who);
+            return (int) NativeMethods.wirefox_peer_get_ping(m_handle, who);
         }
 
         public bool GetPingAvailable(PeerID who) {
@@ -129,6 +130,83 @@ namespace Iridinite.Wirefox {
 
         public void SetNetworkSimulator(float packetLoss, uint additionalPing) {
             NativeMethods.wirefox_peer_set_network_sim(m_handle, packetLoss, additionalPing);
+        }
+
+        public void SetOfflineAdvertisement([NotNull] byte[] ad) {
+            // to pass the buffer to unmanaged code, we need to memcpy it to an unmanaged buffer
+            var length = ad.Length;
+            var buffer = IntPtr.Zero;
+            try {
+                buffer = Marshal.AllocHGlobal(length);
+                Marshal.Copy(ad, 0, buffer, length);
+                NativeMethods.wirefox_peer_set_offline_ad(m_handle, buffer, new UIntPtr((uint) length));
+            } finally {
+                // always free the buffer, even if we error out
+                if (buffer != IntPtr.Zero)
+                    Marshal.FreeHGlobal(buffer);
+            }
+        }
+
+        public void DisableOfflineAdvertisement() {
+            NativeMethods.wirefox_peer_disable_offline_ad(m_handle);
+        }
+
+        public void Ping(string host, ushort port) {
+            NativeMethods.wirefox_peer_ping(m_handle, host, port);
+        }
+
+        public void PingLocalNetwork(ushort port) {
+            NativeMethods.wirefox_peer_ping_local_network(m_handle, port);
+        }
+
+        public int GetEncryptionKeyLength() {
+            return (int) NativeMethods.wirefox_peer_get_crypto_key_length(m_handle);
+        }
+
+        public bool GetEncryptionEnabled() {
+            return NativeMethods.wirefox_peer_get_crypto_enabled(m_handle);
+        }
+
+        public void SetEncryptionEnabled(bool enabled) {
+            NativeMethods.wirefox_peer_set_crypto_enabled(m_handle, enabled);
+        }
+
+        public void SetEncryptionIdentity([NotNull] byte[] keySecret, [NotNull] byte[] keyPublic) {
+            var length = GetEncryptionKeyLength();
+            var bufferS = IntPtr.Zero;
+            var bufferP = IntPtr.Zero;
+            try {
+                bufferS = Marshal.AllocHGlobal(length);
+                bufferP = Marshal.AllocHGlobal(length);
+                Marshal.Copy(keySecret, 0, bufferS, length);
+                Marshal.Copy(keyPublic, 0, bufferP, length);
+
+                NativeMethods.wirefox_peer_set_crypto_identity(m_handle, bufferS, bufferP);
+            } finally {
+                if (bufferS != IntPtr.Zero) Marshal.FreeHGlobal(bufferS);
+                if (bufferP != IntPtr.Zero) Marshal.FreeHGlobal(bufferP);
+            }
+        }
+
+        public void GenerateIdentity(out byte[] keySecret, out byte[] keyPublic) {
+            var length = GetEncryptionKeyLength();
+            var bufferS = IntPtr.Zero;
+            var bufferP = IntPtr.Zero;
+            keySecret = new byte[length];
+            keyPublic = new byte[length];
+
+            try {
+                bufferS = Marshal.AllocHGlobal(length);
+                bufferP = Marshal.AllocHGlobal(length);
+
+                NativeMethods.wirefox_peer_generate_crypto_identity(m_handle, bufferS, bufferP);
+
+                Marshal.Copy(bufferS, keySecret, 0, length);
+                Marshal.Copy(bufferP, keyPublic, 0, length);
+            } finally {
+                if (bufferS != IntPtr.Zero) Marshal.FreeHGlobal(bufferS);
+                if (bufferP != IntPtr.Zero) Marshal.FreeHGlobal(bufferP);
+            }
         }
 
     }

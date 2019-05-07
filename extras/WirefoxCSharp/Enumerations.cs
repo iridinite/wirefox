@@ -15,15 +15,15 @@ namespace Iridinite.Wirefox {
         /// The connection attempt was initiated successfully.
         /// \note This does not imply that the connection was actually opened, only that the \a attempt was started.
         OK,
-        /// Invalid settings were passed to Socket::Connect(). The host-name must be non-empty, and the port must be non-zero.
+        /// Invalid settings were specified. Hostname must be non-empty, port must be non-zero, and explicit public key requires enabling crypto.
         INVALID_PARAMETER,
         /// The resolver could not resolve the host name into an endpoint.
         INVALID_HOSTNAME,
-        /// The socket was not ready to begin a connection. For UDP, the socket must be bound to a local port first.
+        /// The socket was not ready to begin a connection. Make sure it is successfully bound to a port.
         INVALID_STATE,
-        ///
+        /// You are already trying to connect to this endpoint. Wait for a NOTIFY_CONNECT_* notification.
         ALREADY_CONNECTING,
-        ///
+        /// You are already connected to this endpoint.
         ALREADY_CONNECTED,
         /// The local peer has no free slots left to connect with. You need to allocate more slots when creating the Peer, or disconnect someone.
         NO_FREE_SLOTS
@@ -31,20 +31,22 @@ namespace Iridinite.Wirefox {
 
     [PublicAPI]
     public enum ConnectResult {
-        /// Connect attempt is not yet complete, try again later. [Internal use only.]
+        /// \internal [Internal use only.] Connect attempt is not yet complete, try again later.
         IN_PROGRESS,
         /// The connection was opened successfully.
         OK,
         /// The remote endpoint could not be contacted.
         CONNECT_FAILED,
-        /// The remote endpoint is not running Wirefox.
+        /// The remote endpoint is not running Wirefox. (Note: this situation may also result in a CONNECT_FAILED error.)
         INCOMPATIBLE_PROTOCOL,
         /// The remote endpoint is not running the same version of Wirefox.
         INCOMPATIBLE_VERSION,
-        /// The remote endpoint has different security settings than we do.
+        /// The remote endpoint has different security settings than we do, or an error occurred during encryption or decryption.
         INCOMPATIBLE_SECURITY,
+        /// The identity of the remote endpoint could not be verified. Likely causes are a configuration error, or an active MITM-attack.
+        INCORRECT_REMOTE_IDENTITY,
         /// The remote endpoint rejected the password.
-        INVALID_PASSWORD,
+        INCORRECT_PASSWORD,
         /// The remote endpoint has no free slots left to connect with us (or does not accept any connections at all). Try again later.
         NO_FREE_SLOTS,
         /// The remote endpoint is already connected with us (or with someone else with the same PeerID).
@@ -104,7 +106,7 @@ namespace Iridinite.Wirefox {
     public enum PacketCommand : byte {
         /// Indicates that a connection attempt was successful.
         ///     No payload.  Sender is newly connected peer.
-        NOTIFY_CONNECT_SUCCESS = 5,
+        NOTIFY_CONNECT_SUCCESS = 6,
         /// Indicates that a connection attempt has failed.
         ///     (1 byte) ConnectResult, detailed failure reason.
         NOTIFY_CONNECT_FAILED,
@@ -126,8 +128,13 @@ namespace Iridinite.Wirefox {
         ///     Note that delivery failure for reliable packets will cause the connection to be closed.
         NOTIFY_RECEIPT_LOST,
 
+        /// Incoming system advert, sent in response to a PingLocalNetwork() call.
+        ///     Payload begins with a string describing the sender's identity. Parse using BinaryStream::ReadString().
+        ///     The rest of the payload is user-defined (the contents of the advertisement).
+        NOTIFY_ADVERTISEMENT,
+
         /// \internal Placeholder for the first user packet.
-        USER_PACKET = 12
+        USER_PACKET = 14
     }
 
 }

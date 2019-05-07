@@ -51,6 +51,17 @@ WIREFOX_API unsigned        wirefox_peer_get_ping(HWirefoxPeer* handle, TPeerID 
 WIREFOX_API int             wirefox_peer_get_ping_available(HWirefoxPeer* handle, TPeerID who);
 WIREFOX_API void            wirefox_peer_set_network_sim(HWirefoxPeer* handle, float packetLoss, unsigned additionalPing);
 
+WIREFOX_API void            wirefox_peer_set_offline_ad(HWirefoxPeer* handle, const uint8_t* data, size_t len);
+WIREFOX_API void            wirefox_peer_disable_offline_ad(HWirefoxPeer* handle);
+WIREFOX_API void            wirefox_peer_ping(HWirefoxPeer* handle, const char* host, uint16_t port);
+WIREFOX_API void            wirefox_peer_ping_local_network(HWirefoxPeer* handle, uint16_t port);
+
+WIREFOX_API size_t          wirefox_peer_get_crypto_key_length(HWirefoxPeer* handle);
+WIREFOX_API int             wirefox_peer_get_crypto_enabled(HWirefoxPeer* handle);
+WIREFOX_API void            wirefox_peer_set_crypto_enabled(HWirefoxPeer* handle, int enabled);
+WIREFOX_API void            wirefox_peer_set_crypto_identity(HWirefoxPeer* handle, const uint8_t* key_secret, const uint8_t* key_public);
+WIREFOX_API void            wirefox_peer_generate_crypto_identity(HWirefoxPeer* handle, uint8_t* key_secret, uint8_t* key_public);
+
 WIREFOX_API HPacket*        wirefox_packet_create(uint8_t cmd, const uint8_t* data, size_t len);
 WIREFOX_API void            wirefox_packet_destroy(HPacket* handle);
 WIREFOX_API const uint8_t*  wirefox_packet_get_data(HPacket* packet);

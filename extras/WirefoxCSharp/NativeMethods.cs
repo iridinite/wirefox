@@ -8,7 +8,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-
 using TPeerID = System.UInt64;
 using TPacketID = System.UInt32;
 using TChannelIndex = System.Byte;
@@ -80,6 +79,35 @@ namespace Iridinite.Wirefox {
 
         [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
         public static extern void wirefox_peer_set_network_sim(IntPtr handle, float packetLoss, uint additionalPing);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        public static extern void wirefox_peer_set_offline_ad(IntPtr handle, IntPtr data, [MarshalAs(UnmanagedType.SysUInt)] UIntPtr len);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        public static extern void wirefox_peer_disable_offline_ad(IntPtr handle);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        public static extern void wirefox_peer_ping(IntPtr handle, [MarshalAs(UnmanagedType.LPStr)] string host, ushort port);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        public static extern void wirefox_peer_ping_local_network(IntPtr handle, ushort port);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        [return: MarshalAs(UnmanagedType.SysUInt)]
+        public static extern UIntPtr wirefox_peer_get_crypto_key_length(IntPtr handle);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool wirefox_peer_get_crypto_enabled(IntPtr handle);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        public static extern void wirefox_peer_set_crypto_enabled(IntPtr handle, [MarshalAs(UnmanagedType.I1)] bool enabled);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        public static extern void wirefox_peer_set_crypto_identity(IntPtr handle, IntPtr key_secret, IntPtr key_public);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        public static extern void wirefox_peer_generate_crypto_identity(IntPtr handle, IntPtr key_secret, IntPtr key_public);
 
         [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
         public static extern IntPtr wirefox_packet_create(byte command, IntPtr data, [MarshalAs(UnmanagedType.SysUInt)] UIntPtr len);

@@ -25,25 +25,29 @@ namespace Iridinite.Wirefox {
 
         private MemoryStream m_streamMs;
 
-        public Packet(PacketCommand cmd, [NotNull] byte[] payload) {
+        public Packet(PacketCommand cmd, [CanBeNull] byte[] payload) {
             // to pass the buffer to unmanaged code, we need to memcpy it to an unmanaged buffer
             var length = payload?.Length ?? 0;
-            var buffer = Marshal.AllocHGlobal(length);
-            Marshal.Copy(payload, 0, buffer, length);
+            var buffer = IntPtr.Zero;
+            try {
+                // payload may be null, in which case we pass nullptr to C++
+                if (payload != null) {
+                    buffer = Marshal.AllocHGlobal(length);
+                    Marshal.Copy(payload, 0, buffer, length);
+                }
 
-            m_handle = NativeMethods.wirefox_packet_create((byte) cmd, buffer, new UIntPtr((uint)length));
-            m_cmd = cmd;
-            m_sender = PeerID.Invalid;
-            m_payload = payload;
-
-            // PacketQueue will have copied the packet contents into a blob with a header,
-            // so our temporary buffer can be freed
-            Marshal.FreeHGlobal(buffer);
+                m_handle = NativeMethods.wirefox_packet_create((byte) cmd, buffer, new UIntPtr((uint) length));
+                m_cmd = cmd;
+                m_sender = PeerID.Invalid;
+                m_payload = payload;
+            } finally {
+                if (buffer != IntPtr.Zero) Marshal.FreeHGlobal(buffer);
+            }
         }
 
         internal Packet(IntPtr handle) {
             m_handle = handle;
-            m_cmd = (PacketCommand)NativeMethods.wirefox_packet_get_cmd(handle);
+            m_cmd = (PacketCommand) NativeMethods.wirefox_packet_get_cmd(handle);
             m_sender = new PeerID(NativeMethods.wirefox_packet_get_sender(handle));
 
             var dataptr = NativeMethods.wirefox_packet_get_data(handle);

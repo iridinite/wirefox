@@ -15,7 +15,7 @@ namespace Iridinite.Wirefox.Battleships {
             public bool IsPlayerOne { get; set; }
         }
 
-        public const ushort GamePort = 55010;
+        public const ushort GamePort = 51234;
 
         private static Peer peer;
         private static Player player1, player2;
