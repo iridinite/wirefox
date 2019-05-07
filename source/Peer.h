@@ -74,7 +74,7 @@ namespace wirefox {
             void                        SetEncryptionIdentity(const uint8_t* key_secret, const uint8_t* key_public) override;
             void                        GenerateIdentity(uint8_t* key_secret, uint8_t* key_public) const override;
             size_t                      GetEncryptionKeyLength() const override;
-            bool                        GetEncryptionEnabled() const;
+            bool                        GetEncryptionEnabled() const override;
             std::shared_ptr<EncryptionLayer::Keypair> GetEncryptionIdentity() const;
 
             /**

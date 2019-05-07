@@ -203,6 +203,14 @@ namespace wirefox {
         virtual void                    PingLocalNetwork(uint16_t port) const = 0;
 
         /**
+         * \brief Gets a value indicating whether encryption is enabled on all connections.
+         * 
+         * This may return false even after SetEncryptionEnabled() was called, if the library was compiled without
+         * cryptography support.
+         */
+        virtual bool                    GetEncryptionEnabled() const = 0;
+
+        /**
          * \brief Sets whether connection encryption is enabled.
          * 
          * This must be set \b before Bind() is called. If this peer is already bound, this function does nothing.
