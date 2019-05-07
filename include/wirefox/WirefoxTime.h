@@ -23,13 +23,13 @@ namespace wirefox {
         Timestamp(uint64_t t) noexcept;
 
         /// Implicitly converts this Timestamp to its underlying value.
-        operator uint64_t() const noexcept;
+        explicit operator uint64_t() const noexcept;
         /// Checks whether this Timestamp is set to a value.
         bool IsValid() const noexcept;
         /// Adds a Timespan to the Timestamp, and returns the new Timestamp.
-        Timestamp operator+(const Timespan& rhs) noexcept;
+        Timestamp operator+(const Timespan& rhs) const noexcept;
         /// Subtracts a Timespan from the Timestamp, and returns the new Timestamp.
-        Timestamp operator-(const Timespan& rhs) noexcept;
+        Timestamp operator-(const Timespan& rhs) const noexcept;
 
         /// Equality operator.
         bool operator==(const Timestamp& rhs) const noexcept { return t == rhs.t; }

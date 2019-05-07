@@ -599,7 +599,7 @@ bool Peer::PollArtificialPacketLoss() {
 
 PeerID Peer::GeneratePeerID() {
     static_assert(std::is_same<std::mt19937_64::result_type, PeerID>::value, "RNG is expected to return 64-bit number");
-    std::mt19937_64 rng(Time::Now());
+    std::mt19937_64 rng(static_cast<uint64_t>(Time::Now()));
 
     PeerID ret;
     do {

@@ -20,20 +20,15 @@ bool Timestamp::IsValid() const noexcept {
     return t > 0;
 }
 
-Timestamp Timestamp::operator+(const Timespan& rhs) noexcept {
-    t += rhs;
-    return *this;
+Timestamp Timestamp::operator+(const Timespan& rhs) const noexcept {
+    return {t + rhs};
 }
 
-Timestamp Timestamp::operator-(const Timespan& rhs) noexcept{
-    // prevent underflow
-    if (rhs > t) {
-        t = 0;
-    } else {
-        t -= rhs;
-    }
-
-    return *this;
+Timestamp Timestamp::operator-(const Timespan& rhs) const noexcept {
+    return {rhs > t
+        ? 0 // prevent underflow
+        : t - rhs
+    };
 }
 
 Timestamp Time::Now() {
