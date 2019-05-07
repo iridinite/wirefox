@@ -37,16 +37,19 @@ void CongestionControl::Update() {
     if (!Time::Elapsed(m_nextUpdate)) return;
     m_nextUpdate = Time::Now() + Time::FromMilliseconds(20);
 
+    // Prefer caching this over Elapsed(), because Elapsed() wraps Now(), and getting clock is somewhat expensive
+    auto now = Time::Now();
+
     // Traverse outgoing entries, and discard those that are so old they're probably irrelevant.
     // This ensures that even un-acked packets (ack never sent, or got lost) will be removed.
 #if _DEBUG
     size_t bytesStillOutgoing = 0;
 #endif
-    auto decayTime = m_rttAvg * 16; // somewhat arbitrary long time
+    Timespan wireExpireTime = m_rttAvg * 16; // somewhat arbitrary long time
     auto itr_flight = m_outgoing.begin();
     while (itr_flight != m_outgoing.end()) {
         const auto& pif = itr_flight->second;
-        if (Time::Elapsed(pif.sent + decayTime)) {
+        if (now >= pif.sent + wireExpireTime) {
             m_bytesInFlight -= pif.bytes;
             itr_flight = m_outgoing.erase(itr_flight);
         }
@@ -64,18 +67,16 @@ void CongestionControl::Update() {
 
     // Clean up expired history for both packets and datagrams.
     // Unfortunately we can't use remove_if with an std::map... so this is more or less the closest, I think.
-
-    // prefer caching this over Elapsed(), because Elapsed() wraps Now(), and getting clock is somewhat expensive
-    auto expire = Time::Now() + Time::FromSeconds(10);
+    Timespan historyExpireTime = Time::FromSeconds(10);
 
     for (auto itr_datagram = m_datagramHistory.begin(), itend = m_datagramHistory.end(); itr_datagram != itend;) {
-        if (expire >= itr_datagram->second)
+        if (now >= itr_datagram->second + historyExpireTime)
             itr_datagram = m_datagramHistory.erase(itr_datagram);
         else
             ++itr_datagram;
     }
     for (auto itr_packet = m_packetHistory.begin(), itend = m_packetHistory.end(); itr_packet != itend;) {
-        if (expire >= itr_packet->second)
+        if (now >= itr_packet->second + historyExpireTime)
             itr_packet = m_packetHistory.erase(itr_packet);
         else
             ++itr_packet;
