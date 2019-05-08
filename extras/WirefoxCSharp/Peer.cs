@@ -209,6 +209,35 @@ namespace Iridinite.Wirefox {
             }
         }
 
+        public static string ConnectResultToString(ConnectResult cr) {
+            switch (cr) {
+                case ConnectResult.OK:
+                    return "No error occurred.";
+                case ConnectResult.CONNECT_FAILED:
+                    return "Failed to connect: Could not contact the remote host, or a communication error occurred.";
+                case ConnectResult.INCOMPATIBLE_PROTOCOL:
+                    return "Failed to connect: The remote host is not running Wirefox, or a communication error occurred.";
+                case ConnectResult.INCOMPATIBLE_VERSION:
+                    return "Failed to connect: The remote host is running an incompatible version of Wirefox.";
+                case ConnectResult.INCOMPATIBLE_SECURITY:
+                    return "Failed to establish secure connection: A configuration error was detected.";
+                case ConnectResult.INCORRECT_REMOTE_IDENTITY:
+                    return "Failed to establish secure connection: The identity of the remote host could not be verified.";
+                case ConnectResult.INCORRECT_PASSWORD:
+                    return "The password is incorrect.";
+                case ConnectResult.NO_FREE_SLOTS:
+                    return "The remote host is full. Please try again later.";
+                case ConnectResult.ALREADY_CONNECTED:
+                    return "You are already connected to this remote host.";
+                case ConnectResult.IP_RATE_LIMITED:
+                    return "You are sending too many requests in a short time. Please try again later.";
+                case ConnectResult.BANNED:
+                    return "You are banned from this remote host.";
+                default:
+                    return "Unknown error.";
+            }
+        }
+
     }
 
 }

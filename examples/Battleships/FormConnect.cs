@@ -81,7 +81,7 @@ namespace Iridinite.Wirefox.Battleships {
                     fraConnect.Enabled = true;
                     fraHost.Enabled = true;
                     cmdConnect.Text = "Connect";
-                    MessageBox.Show("Failed to connect: " + reason, ":(", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    MessageBox.Show("Error: " + Peer.ConnectResultToString(reason), ":(", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     break;
 
                 case PacketCommand.NOTIFY_CONNECTION_LOST:
