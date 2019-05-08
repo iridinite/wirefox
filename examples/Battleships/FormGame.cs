@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Iridinite.Wirefox.Battleships {
@@ -48,11 +49,15 @@ namespace Iridinite.Wirefox.Battleships {
 
         private Ship m_Placing;
         private ShipType m_PlacingType;
+        private bool m_ExpectDisconnect = false;
 
         public FormGame() {
             InitializeComponent();
 
             m_packetHandlers = new Dictionary<PacketCommand, MessageReceivedHandler> {
+                { PacketCommand.NOTIFY_DISCONNECTED, OnDisconnect },
+                { PacketCommand.NOTIFY_CONNECTION_LOST, OnDisconnect },
+                { (PacketCommand) GameCommand.OpponentDisconnected, OnDisconnectOpponent },
                 { (PacketCommand) GameCommand.Chat, OnChat },
                 { (PacketCommand) GameCommand.PlaceShip, OnPlaceShipReply },
                 { (PacketCommand) GameCommand.YourTurn, OnOurTurn },
@@ -71,9 +76,29 @@ namespace Iridinite.Wirefox.Battleships {
         }
 
         private void FormGame_FormClosed(object sender, FormClosedEventArgs e) {
-            Server.Stop();
-            Client.Stop();
-            FormConnect.Instance.Show();
+            ThreadPool.QueueUserWorkItem(delegate {
+                // stop networking
+                Server.Stop();
+                Client.Stop();
+
+                // reset and re-show the welcome dialog
+                FormConnect.Instance.Invoke(new Action(() => {
+                    FormConnect.Instance.ResetUI();
+                    FormConnect.Instance.Show();
+                }));
+            });
+        }
+
+        private void cmdDisconnect_Click(object sender, EventArgs e) {
+            if (m_ExpectDisconnect) {
+                Close();
+                return;
+            }
+
+            cmdDisconnect.Text = "Disconnecting...";
+            cmdDisconnect.Enabled = false;
+            m_ExpectDisconnect = true;
+            Client.Disconnect();
         }
 
         #region Board Rendering
@@ -256,6 +281,7 @@ namespace Iridinite.Wirefox.Battleships {
                 case GamePhase.OurTurn:
                     lblGameStatus.Text = "It's your turn! Click one cell to shoot it.";
                     lblTrackingGridPurpose.Text = "Your Fleet";
+                    picMainBoard.Enabled = true;
                     picMainBoard.Invalidate();
                     picTrackingBoard.Invalidate();
                     break;
@@ -388,6 +414,29 @@ namespace Iridinite.Wirefox.Battleships {
 
         private void OnGameLost(Packet recv) {
             lblGameStatus.Text = "All your ships are gone, you lost :(";
+            SetPhase(GamePhase.Ended);
+        }
+
+        private void OnDisconnect(Packet recv) {
+            if (m_ExpectDisconnect) {
+                Close();
+                return;
+            }
+
+            cmdChat.Enabled = false;
+            cmdDisconnect.Text = "Exit";
+            cmdDisconnect.Enabled = true;
+            lblGameStatus.Text = "Lost connection with the server.";
+            m_ExpectDisconnect = true;
+            SetPhase(GamePhase.Ended);
+        }
+
+        private void OnDisconnectOpponent(Packet recv) {
+            cmdChat.Enabled = false;
+            cmdDisconnect.Text = "Exit";
+            cmdDisconnect.Enabled = true;
+            lblGameStatus.Text = "Your opponent disconnected.";
+            m_ExpectDisconnect = true;
             SetPhase(GamePhase.Ended);
         }
 

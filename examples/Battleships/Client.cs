@@ -93,6 +93,10 @@ namespace Iridinite.Wirefox.Battleships {
             return ret == ConnectAttemptResult.OK;
         }
 
+        public static void Disconnect() {
+            peer.Disconnect(serverID);
+        }
+
         public static void SendPlaceShip(Ship newShip) {
             using (var ms = new MemoryStream()) {
                 using (var writer = new BinaryWriter(ms, Encoding.UTF8)) {

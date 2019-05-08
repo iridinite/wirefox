@@ -17,7 +17,8 @@ namespace Iridinite.Wirefox.Battleships {
         ShootIncoming,
 
         GameWin,
-        GameLose
+        GameLose,
+        OpponentDisconnected
     }
 
 }

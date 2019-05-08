@@ -28,7 +28,7 @@ namespace Iridinite.Wirefox.Battleships {
         private static volatile bool workerStop = true;
         private static readonly Dictionary<PacketCommand, MessageReceivedHandler> packetHandlers;
 
-        private static readonly byte[] EmptyPayload = new byte[0];
+        private static readonly byte[] EmptyPayload = null;
 
         static Server() {
             // Register handlers for each of the possible PacketCommands.
@@ -133,7 +133,14 @@ namespace Iridinite.Wirefox.Battleships {
             }
         }
 
-        private static void OnPlayerDisconnect(Packet recv) { }
+        private static void OnPlayerDisconnect(Packet recv) {
+            var other = GetOtherPlayer(GetPlayerForPeerID(recv.GetSender()));
+
+            using (var packet = new Packet((PacketCommand) GameCommand.OpponentDisconnected, EmptyPayload)) {
+                peer.Send(packet, other.NetworkID, PacketOptions.RELIABLE);
+                peer.Stop(TimeSpan.FromMilliseconds(200)); // some time to send out the disconnection notification
+            }
+        }
 
         private static void OnPlayerChat(Packet recv) {
             var player = GetPlayerForPeerID(recv.GetSender());

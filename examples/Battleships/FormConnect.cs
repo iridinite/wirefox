@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace Iridinite.Wirefox.Battleships {
@@ -12,6 +13,14 @@ namespace Iridinite.Wirefox.Battleships {
 
             Instance = this;
             DialogResult = DialogResult.Cancel;
+        }
+
+        public void ResetUI() {
+            fraConnect.Enabled = true;
+            fraHost.Enabled = true;
+            lblHostStatus.Text = "One other player can connect to you.";
+            cmdHost.Enabled = true;
+            cmdConnect.Text = "Connect";
         }
 
         private void cmdHost_Click(object sender, EventArgs e) {
@@ -91,11 +100,15 @@ namespace Iridinite.Wirefox.Battleships {
                     MessageBox.Show("Lost connection.", ":(", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     break;
 
-                case (PacketCommand)GameCommand.BeginSession:
+                case (PacketCommand) GameCommand.BeginSession:
                     new FormGame().Show(this);
                     this.Hide();
                     break;
             }
+        }
+
+        private void lklGithub_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
+            Process.Start("https://github.com/iridinite/wirefox");
         }
 
     }

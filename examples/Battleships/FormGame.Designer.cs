@@ -35,6 +35,7 @@
             this.txtChatLog = new System.Windows.Forms.TextBox();
             this.cmdChat = new System.Windows.Forms.Button();
             this.lblTrackingGridPurpose = new System.Windows.Forms.Label();
+            this.cmdDisconnect = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.picMainBoard)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picTrackingBoard)).BeginInit();
             this.SuspendLayout();
@@ -107,11 +108,22 @@
             this.lblTrackingGridPurpose.TabIndex = 6;
             this.lblTrackingGridPurpose.Text = "Tracking Grid";
             // 
+            // cmdDisconnect
+            // 
+            this.cmdDisconnect.Location = new System.Drawing.Point(24, 416);
+            this.cmdDisconnect.Name = "cmdDisconnect";
+            this.cmdDisconnect.Size = new System.Drawing.Size(104, 24);
+            this.cmdDisconnect.TabIndex = 7;
+            this.cmdDisconnect.Text = "Disconnect";
+            this.cmdDisconnect.UseVisualStyleBackColor = true;
+            this.cmdDisconnect.Click += new System.EventHandler(this.cmdDisconnect_Click);
+            // 
             // FormGame
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(841, 465);
+            this.Controls.Add(this.cmdDisconnect);
             this.Controls.Add(this.lblTrackingGridPurpose);
             this.Controls.Add(this.cmdChat);
             this.Controls.Add(this.txtChatLog);
@@ -142,5 +154,6 @@
         private System.Windows.Forms.TextBox txtChatLog;
         private System.Windows.Forms.Button cmdChat;
         private System.Windows.Forms.Label lblTrackingGridPurpose;
+        private System.Windows.Forms.Button cmdDisconnect;
     }
 }

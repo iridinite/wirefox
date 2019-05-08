@@ -37,6 +37,7 @@
             this.lblHostStatus = new System.Windows.Forms.Label();
             this.cmdHost = new System.Windows.Forms.Button();
             this.cmdExit = new System.Windows.Forms.Button();
+            this.lklGithub = new System.Windows.Forms.LinkLabel();
             this.fraConnect.SuspendLayout();
             this.fraHost.SuspendLayout();
             this.SuspendLayout();
@@ -65,7 +66,7 @@
             this.fraConnect.Controls.Add(this.txtIP);
             this.fraConnect.Controls.Add(this.lblIP);
             this.fraConnect.Controls.Add(this.cmdConnect);
-            this.fraConnect.Location = new System.Drawing.Point(16, 64);
+            this.fraConnect.Location = new System.Drawing.Point(16, 88);
             this.fraConnect.Name = "fraConnect";
             this.fraConnect.Size = new System.Drawing.Size(264, 120);
             this.fraConnect.TabIndex = 2;
@@ -93,7 +94,7 @@
             // 
             this.fraHost.Controls.Add(this.lblHostStatus);
             this.fraHost.Controls.Add(this.cmdHost);
-            this.fraHost.Location = new System.Drawing.Point(16, 200);
+            this.fraHost.Location = new System.Drawing.Point(16, 224);
             this.fraHost.Name = "fraHost";
             this.fraHost.Size = new System.Drawing.Size(264, 96);
             this.fraHost.TabIndex = 4;
@@ -121,7 +122,7 @@
             // 
             // cmdExit
             // 
-            this.cmdExit.Location = new System.Drawing.Point(168, 312);
+            this.cmdExit.Location = new System.Drawing.Point(168, 352);
             this.cmdExit.Name = "cmdExit";
             this.cmdExit.Size = new System.Drawing.Size(112, 24);
             this.cmdExit.TabIndex = 2;
@@ -129,11 +130,23 @@
             this.cmdExit.UseVisualStyleBackColor = true;
             this.cmdExit.Click += new System.EventHandler(this.cmdExit_Click);
             // 
+            // lklGithub
+            // 
+            this.lklGithub.AutoSize = true;
+            this.lklGithub.Location = new System.Drawing.Point(16, 56);
+            this.lklGithub.Name = "lklGithub";
+            this.lklGithub.Size = new System.Drawing.Size(119, 13);
+            this.lklGithub.TabIndex = 5;
+            this.lklGithub.TabStop = true;
+            this.lklGithub.Text = "Visit Wirefox on GitHub!";
+            this.lklGithub.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lklGithub_LinkClicked);
+            // 
             // FormConnect
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(297, 353);
+            this.ClientSize = new System.Drawing.Size(297, 393);
+            this.Controls.Add(this.lklGithub);
             this.Controls.Add(this.cmdExit);
             this.Controls.Add(this.fraHost);
             this.Controls.Add(this.fraConnect);
@@ -163,6 +176,7 @@
         private System.Windows.Forms.Button cmdHost;
         private System.Windows.Forms.Button cmdExit;
         private System.Windows.Forms.Label lblHostStatus;
+        private System.Windows.Forms.LinkLabel lklGithub;
     }
 }
 
