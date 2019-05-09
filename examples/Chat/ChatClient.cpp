@@ -93,7 +93,7 @@ void ChatClient::Connect(const std::string& host, unsigned short port) {
         return;
     }
 
-    auto attempt = m_peer->Connect(host, port, SERVER_KEY_PUBLIC);
+    auto attempt = m_peer->Connect(host, port, m_peer->GetEncryptionEnabled() ? SERVER_KEY_PUBLIC : nullptr);
     switch (attempt) {
     case wirefox::ConnectAttemptResult::OK:
         std::cout << "Hold on..." << std::endl;
