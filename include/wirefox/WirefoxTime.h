@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include "WirefoxConfig.h"
 
 namespace wirefox {
 

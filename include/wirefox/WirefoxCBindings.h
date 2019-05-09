@@ -10,6 +10,7 @@
 #define _WIREFOX_C_BINDINGS_H
 
 #ifdef WIREFOX_BUILD_C_BINDINGS
+#include "WirefoxConfig.h"
 
 #ifdef __cplusplus
 extern "C" {

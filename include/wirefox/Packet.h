@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include "WirefoxConfig.h"
 #include "Enumerations.h"
 #include "Factory.h"
 

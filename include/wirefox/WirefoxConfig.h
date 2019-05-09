@@ -13,6 +13,9 @@
  * \brief Global compile-time configuration file for Wirefox.
  */
 
+// allow this file to be included in the C bindings header
+#ifdef __cplusplus
+
 namespace wirefox {
 
     // Forward declarations
@@ -194,6 +197,8 @@ namespace wirefox {
     }
 
 }
+
+#endif // __cplusplus
 
 // Here's a forest of macros for doing a platform-specific dllexport/import
 #ifdef WIREFOX_SHARED_LIB

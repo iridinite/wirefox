@@ -9,6 +9,7 @@
 #pragma once
 #include "Socket.h"
 #include "RemoteAddress.h"
+#include "WirefoxConfig.h"
 
 namespace wirefox {
 

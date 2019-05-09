@@ -53,7 +53,5 @@
 #pragma warning(pop)
 #endif
 
-#include "WirefoxConfig.h"
-
 namespace wirefox {}
 using namespace wirefox;
