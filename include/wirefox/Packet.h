@@ -67,6 +67,9 @@ namespace wirefox {
         /// Returns the length, in bytes, of the data buffer.
         WIREFOX_API size_t              GetLength() const noexcept { return m_length; }
 
+        /// [Internal use only.] Returns the length, in bytes, of the serialized packet in a datagram.
+        WIREFOX_API size_t              GetDatagramLength() const noexcept { return GetLength() + sizeof(uint8_t); }
+
         /// Returns the PeerID of whoever created and sent this Packet.
         /// \note If this Packet was never sent over the network (e.g. created by you), the sender is invalid.
         WIREFOX_API PeerID              GetSender() const noexcept { return m_sender; }

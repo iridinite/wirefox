@@ -108,6 +108,8 @@ Packet Packet::FromDatagram(PeerID sender, BinaryStream& instream, size_t len) {
 Packet::Packet(PeerID sender, BinaryStream& instream, size_t len)
     : m_sender(sender)
     , m_length(len) {
+    assert(len >= 1);
     m_command = static_cast<PacketCommand>(instream.ReadByte());
-    m_data = CopyFrom(instream.GetBuffer() + instream.GetPosition(), len);
+    m_data = CopyFrom(instream.GetBuffer() + instream.GetPosition(), len - 1);
+    instream.Skip(len - 1);
 }

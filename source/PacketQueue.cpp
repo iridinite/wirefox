@@ -42,39 +42,60 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     // if disconnect is in progress, disallow queueing of more packets
     if (remote->IsDisconnecting()) return 0;
 
+    // serialize the packet to an opaque blob (only prepends the cmdid, but that's an implementation detail we should ignore here)
+    BinaryStream fullPacketStream(packet.GetDatagramLength());
+    packet.ToDatagram(fullPacketStream);
+    assert(fullPacketStream.GetLength() == packet.GetDatagramLength());
+
+    // compute how many MTU-sized blocks we need for the full blob
+    constexpr size_t CHUNK_SIZE = cfg::MTU;
+    size_t segments = (fullPacketStream.GetLength() - 1) / CHUNK_SIZE + 1;
+        //(fullPacketStream.GetLength() + CHUNK_SIZE - 1) / CHUNK_SIZE;
+
     WIREFOX_LOCK_GUARD(remote->lock);
-
     PacketID nextPacketID = remote->congestion->GetNextPacketID();
-    OutgoingPacket meta;
-    meta.id = nextPacketID;
-    meta.addr = remote->addr;
-    meta.remote = remote;
-    meta.crypto = nullptr;
-    meta.options = options;
-    meta.sendNext = Time::Now();
-    meta.sendCount = 0;
 
-    // if a receipt was requested, add this new packet id to the tracker
-    if (meta.HasFlag(PacketOptions::WITH_RECEIPT))
-        remote->receipt->Track(meta.id);
+    for (size_t i = 0; i < segments; i++) {
+        OutgoingPacket meta;
+        meta.id = nextPacketID;
+        meta.addr = remote->addr;
+        meta.remote = remote;
+        meta.crypto = nullptr;
+        meta.options = options;
+        meta.sendNext = Time::Now();
+        meta.sendCount = 0;
 
-    // build and write a packet header for this message
-    PacketHeader header;
-    header.id = meta.id;
-    header.options = options;
-    header.channel = channel.id;
-    header.length = static_cast<uint32_t>(packet.GetLength());
-    header.offset = 0; // TODO: split packets
+        // if packet is segmented, upgrade reliability, because if any of those segments get lost,
+        // then the entire transmission is rendered useless
+        if (segments > 1)
+            meta.options = meta.options | PacketOptions::RELIABLE;
 
-    // assign sequence number for ordered packets
-    if (auto* chbuf = remote->GetChannelBuffer(m_peer, channel.id))
-        header.sequence = chbuf->GetNextOutgoing();
+        // if a receipt was requested, add this new packet id to the tracker
+        if (meta.HasFlag(PacketOptions::WITH_RECEIPT))
+            remote->receipt->Track(meta.id);
 
-    header.Serialize(meta.blob);
+        // build and write a packet header for this message
+        PacketHeader header;
+        header.id = meta.id;
+        header.options = options;
+        header.channel = channel.id;
+        header.length = static_cast<uint32_t>(fullPacketStream.GetLength());
+        header.offset = static_cast<uint32_t>(i * CHUNK_SIZE);
+        header.flag_segment = i < (segments - 1); // not the last segment?
+        header.flag_jumbo = packet.GetLength() >= std::numeric_limits<uint16_t>::max();
 
-    // append the packet contents themselves
-    packet.ToDatagram(meta.blob);
-    remote->outbox.push_back(std::move(meta));
+        // assign sequence number for ordered packets
+        if (auto* chbuf = remote->GetChannelBuffer(m_peer, channel.id))
+            header.sequence = chbuf->GetNextOutgoing();
+
+        // build the full transmissible packet, including serialized header
+        size_t bufferLength = std::min(fullPacketStream.GetLength() - (i * CHUNK_SIZE), CHUNK_SIZE);
+        header.Serialize(meta.blob);
+        meta.blob.WriteBytes(fullPacketStream.GetBuffer() + header.offset, bufferLength);
+
+        // and queue the packet
+        remote->outbox.push_back(std::move(meta));
+    }
 
     return nextPacketID;
 }
@@ -94,7 +115,7 @@ void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& ad
 
     PacketHeader header;
     header.options = PacketOptions::UNRELIABLE;
-    header.length = static_cast<uint32_t>(packet.GetLength());
+    header.length = static_cast<uint32_t>(packet.GetDatagramLength());
     header.offset = 0;
     header.Serialize(meta.blob);
 
@@ -303,6 +324,9 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
     // datagram may contain any number of packets, so keep parsing headers until we run out
     PacketHeader packetHeader;
     while (packetHeader.Deserialize(inbuffer)) {
+        // catch some obvious corruptions
+        assert(packetHeader.length < datagramHeader.dataLength);
+
         // not a duplicate receive?
         if (remote->congestion->NotifyReceivedPacket(packetHeader.id) == CongestionControl::RecvState::NEW) {
             // construct an actual Packet instance and get moving with it
@@ -315,8 +339,6 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
                 // user data
                 HandleIncomingPacket(*remote, packetHeader, std::move(packet));
         }
-
-        inbuffer.Skip(packetHeader.length);
     }
 
     // request an immediate update, so a new read will be scheduled asap
