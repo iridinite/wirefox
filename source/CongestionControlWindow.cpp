@@ -30,12 +30,12 @@ size_t CongestionControlWindow::GetRetransmissionBudget() const {
 Timespan CongestionControlWindow::GetRetransmissionRTO(unsigned retries) const {
     constexpr Timespan baseDelay = Time::FromMilliseconds(cfg::THREAD_SLEEP_PACKETQUEUE_TICK);
 
-    // a little measure so a new connection won't have a silly RTT of zero
+    // a conservative little measure so a new connection won't have a silly RTT of zero
     if (GetRTTHistoryAvailable())
-        return baseDelay * 4;
+        return Time::FromMilliseconds(100) + baseDelay;
 
     Timespan variance = m_rttMax - m_rttMin;
-    Timespan rto = m_rttAvg + (2 * variance) + baseDelay;
+    Timespan rto = 2 * m_rttAvg + 4 * variance + baseDelay;
 
     return rto * (retries + 1);
 }
