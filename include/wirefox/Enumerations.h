@@ -179,6 +179,13 @@ namespace wirefox {
         return static_cast<Enum>(static_cast<underlying_t>(lhs) | static_cast<underlying_t>(rhs));
     }
 
+    /// Returns a boolean indicating whether the bitfield lhs contains the bitmask rhs.
+    template<typename Enum, typename Enable = typename std::enable_if<enable_bitmask<Enum>::value, Enum>::type>
+    constexpr bool operator&(Enum lhs, Enum rhs) {
+        using underlying_t = typename std::underlying_type<Enum>::type;
+        return static_cast<underlying_t>(static_cast<underlying_t>(lhs) & static_cast<underlying_t>(rhs)) == static_cast<underlying_t>(rhs);
+    }
+
     /// \endcond
 
 }
