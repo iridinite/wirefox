@@ -75,10 +75,20 @@ namespace wirefox {
         /**
          * \brief Move the read/write head position to the specified position in bytes.
          * 
-         * Positions that are outside the stream bounds (lower than 0, or higher than GetLength()) will be clamped.
+         * Positions that are outside the stream bounds (higher than GetLength()) will be clamped.
          * \param[in]   position    The new absolute stream position, in bytes.
          */
         void            Seek(size_t position);
+
+        /**
+         * \brief Move the read/write head position to the specified position in bytes.
+         * 
+         * If \p position is outside the stream bounds (higher than GetLength()), the stream will be
+         * extended to fit, so \p position becomes valid.
+         * 
+         * \param[in]   position    The new absolute stream position, in bytes.
+         */
+        void            SeekForce(size_t position);
 
         /// Seek to the beginning of the stream. Equivalent to \p Seek(0) .
         void            SeekToBegin() { Seek(0); }

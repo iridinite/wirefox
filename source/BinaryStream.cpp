@@ -135,6 +135,15 @@ void BinaryStream::Seek(size_t position) {
     m_position = std::min(std::max(position, size_t(0)), m_length);
 }
 
+void BinaryStream::SeekForce(size_t position) {
+    if (m_capacity <= position) {
+        SeekToEnd();
+        WriteZeroes(position - m_position);
+    }
+
+    Seek(position);
+}
+
 bool BinaryStream::Skip(size_t num) {
     if (IsEOF(num)) return false;
     m_position += num;
