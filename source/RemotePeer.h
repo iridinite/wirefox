@@ -14,6 +14,7 @@
 #include "ChannelBuffer.h"
 #include "ReceiptTracker.h"
 #include "EncryptionLayer.h"
+#include "ReassemblyBuffer.h"
 
 namespace wirefox {
 
@@ -56,6 +57,9 @@ namespace wirefox {
 
             /// A handle to an object that services requests for delivery receipts.
             std::unique_ptr<ReceiptTracker> receipt;
+
+            /// A handle to an object that services requests for delivery receipts.
+            ReassemblyBuffer assembly;
 
             /// The unique ID number of this remote endpoint. May be zero if handshake incomplete.
             PeerID id;

@@ -26,7 +26,8 @@ namespace {
 }
 
 RemotePeer::RemotePeer()
-    : id(0)
+    : assembly(this)
+    , id(0)
     , disconnect(0)
     , reserved(false)
     , active(false) {}
@@ -142,6 +143,7 @@ void RemotePeer::Reset() {
     congestion = nullptr;
     crypto = nullptr;
     receipt = nullptr;
+    assembly = ReassemblyBuffer(this);
     outbox.clear();
     sentbox.clear();
     channels.clear();

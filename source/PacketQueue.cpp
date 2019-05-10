@@ -22,7 +22,7 @@ static_assert(cfg::THREAD_SLEEP_PACKETQUEUE_TICK > 0, "wirefox::cfg::THREAD_SLEE
 PacketQueue::PacketQueue(Peer* peer)
     : m_peer(peer)
     , m_updateThreadAbort(false) {
-    // now that the buffers are ready, start up I/O thread
+    // start up I/O thread
     m_updateThread = std::thread(std::bind(&PacketQueue::ThreadWorker, this));
 }
 
@@ -48,16 +48,23 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
     assert(fullPacketStream.GetLength() == packet.GetDatagramLength());
 
     // compute how many MTU-sized blocks we need for the full blob
-    constexpr size_t CHUNK_SIZE = cfg::MTU;
-    size_t segments = (fullPacketStream.GetLength() - 1) / CHUNK_SIZE + 1;
-        //(fullPacketStream.GetLength() + CHUNK_SIZE - 1) / CHUNK_SIZE;
+    const size_t CHUNK_SIZE = cfg::MTU - 100;
+    const size_t segments = (fullPacketStream.GetLength() - 1) / CHUNK_SIZE + 1;
 
     WIREFOX_LOCK_GUARD(remote->lock);
-    PacketID nextPacketID = remote->congestion->GetNextPacketID();
+
+
+    SequenceID containerSequenceID = 0;
+    PacketID containerPacketID = remote->congestion->GetNextPacketID();
+    std::set<PacketID> segmentIDs;
+
+    // assign sequence number for ordered packets
+    if (auto* chbuf = remote->GetChannelBuffer(m_peer, channel.id))
+        containerSequenceID = chbuf->GetNextOutgoing();
 
     for (size_t i = 0; i < segments; i++) {
         OutgoingPacket meta;
-        meta.id = nextPacketID;
+        meta.id = containerPacketID;
         meta.addr = remote->addr;
         meta.remote = remote;
         meta.crypto = nullptr;
@@ -67,37 +74,44 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
 
         // if packet is segmented, upgrade reliability, because if any of those segments get lost,
         // then the entire transmission is rendered useless
-        if (segments > 1)
+        if (segments > 1) {
+            meta.id = remote->congestion->GetNextPacketID();
             meta.options = meta.options | PacketOptions::RELIABLE;
-
-        // if a receipt was requested, add this new packet id to the tracker
-        if (meta.HasFlag(PacketOptions::WITH_RECEIPT))
-            remote->receipt->Track(meta.id);
+            segmentIDs.emplace(meta.id);
+        }
 
         // build and write a packet header for this message
+        size_t bufferLength = std::min(fullPacketStream.GetLength() - (i * CHUNK_SIZE), CHUNK_SIZE);
         PacketHeader header;
+        header.flag_segment = i < (segments - 1); // not the last segment?
+        header.flag_jumbo = packet.GetLength() >= std::numeric_limits<uint16_t>::max();
         header.id = meta.id;
         header.options = options;
         header.channel = channel.id;
-        header.length = static_cast<uint32_t>(fullPacketStream.GetLength());
+        header.sequence = containerSequenceID;
+        header.length = static_cast<uint32_t>(bufferLength);
         header.offset = static_cast<uint32_t>(i * CHUNK_SIZE);
-        header.flag_segment = i < (segments - 1); // not the last segment?
-        header.flag_jumbo = packet.GetLength() >= std::numeric_limits<uint16_t>::max();
-
-        // assign sequence number for ordered packets
-        if (auto* chbuf = remote->GetChannelBuffer(m_peer, channel.id))
-            header.sequence = chbuf->GetNextOutgoing();
+        header.splitContainer = containerPacketID;
+        header.splitIndex = static_cast<uint32_t>(i);
 
         // build the full transmissible packet, including serialized header
-        size_t bufferLength = std::min(fullPacketStream.GetLength() - (i * CHUNK_SIZE), CHUNK_SIZE);
         header.Serialize(meta.blob);
         meta.blob.WriteBytes(fullPacketStream.GetBuffer() + header.offset, bufferLength);
+        //std::cout << "Queued split packet " << header.splitContainer << "." << header.splitIndex << ", size = " << meta.blob.GetLength() << ", wrapped by " << header.id << std::endl;
 
         // and queue the packet
         remote->outbox.push_back(std::move(meta));
     }
 
-    return nextPacketID;
+    // if a receipt was requested, add this new packet id to the tracker
+    if (options & PacketOptions::WITH_RECEIPT) {
+        remote->receipt->Track(containerPacketID);
+
+        if (segments > 1)
+            remote->receipt->RegisterSplitPacket(containerPacketID, std::move(segmentIDs));
+    }
+
+    return containerPacketID;
 }
 
 void PacketQueue::EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr, RemotePeer* forceCryptoBy) {
@@ -278,9 +292,9 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 
     // the payload and header length cannot be bigger than the MTU together, as that makes no sense, and is probably an attack
     if (datagramHeader.flag_data && datagramHeader.dataLength + inbuffer.GetPosition() > cfg::MTU) {
-        //std::string msg = "PacketQueue: [Remote " + std::to_string(remote->id) + "] Received too big data section ("
-        //    + std::to_string(datagramHeader.dataLength + inbuffer.GetPosition()) + ")! Killing connection.";
-        //std::cerr << msg << std::endl;
+        std::string msg = "PacketQueue: [Remote " + std::to_string(remote->id) + "] Received too big data section ("
+            + std::to_string(datagramHeader.dataLength + inbuffer.GetPosition()) + ")! Killing connection.";
+        std::cerr << msg << std::endl;
         m_peer->DisconnectImmediate(remote);
         return;
     }
@@ -325,10 +339,18 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
     PacketHeader packetHeader;
     while (packetHeader.Deserialize(inbuffer)) {
         // catch some obvious corruptions
+        assert(packetHeader.offset < cfg::PACKET_MAX_LENGTH);
         assert(packetHeader.length < datagramHeader.dataLength);
 
         // not a duplicate receive?
         if (remote->congestion->NotifyReceivedPacket(packetHeader.id) == CongestionControl::RecvState::NEW) {
+            // split packet?
+            if (packetHeader.flag_segment || packetHeader.offset > 0) {
+                // this is a split packet, so let's reassemble it
+                HandleSplitPacket(*remote, packetHeader, inbuffer);
+                continue;
+            }
+
             // construct an actual Packet instance and get moving with it
             auto packet = Packet::Factory::Create(Packet::FromDatagram(remote->id, inbuffer, packetHeader.length));
 
@@ -338,6 +360,9 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
             else
                 // user data
                 HandleIncomingPacket(*remote, packetHeader, std::move(packet));
+
+        } else {
+            inbuffer.Skip(packetHeader.length);
         }
     }
 
@@ -345,10 +370,17 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
     m_updateNotify.Signal();
 }
 
-void PacketQueue::HandleIncomingPacket(RemotePeer& remote, const PacketHeader& header, std::unique_ptr<Packet> packet) {
-    ChannelBuffer* channel = remote.GetChannelBuffer(m_peer, header.channel);
+void PacketQueue::HandleSplitPacket(RemotePeer& remote, const PacketHeader& header, BinaryStream& instream) {
+    //std::cout << "Insert split packet " << header.splitContainer << "." << header.splitIndex << ", wrapped by #" << header.id << std::endl;
+    remote.assembly.Insert(header, instream);
 
-    if (channel) {
+    if (auto p = remote.assembly.Reassemble(header.splitContainer))
+        //if (remote.congestion->NotifyReceivedPacket(header.splitContainer) == CongestionControl::RecvState::NEW)
+            HandleIncomingPacket(remote, header, std::move(p));
+}
+
+void PacketQueue::HandleIncomingPacket(RemotePeer& remote, const PacketHeader& header, std::unique_ptr<Packet> packet) {
+    if (ChannelBuffer* channel = remote.GetChannelBuffer(m_peer, header.channel)) {
         // add this packet to the channel buffer
         channel->Enqueue(header.sequence, std::move(packet));
 

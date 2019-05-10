@@ -12,11 +12,6 @@
 
 using namespace wirefox::detail;
 
-constexpr bool HasFlag(PacketOptions options, PacketOptions test) {
-    using num_t = std::underlying_type<decltype(test)>::type;
-    return (static_cast<num_t>(options) & static_cast<num_t>(test)) == static_cast<num_t>(test);
-}
-
 void PacketHeader::Serialize(BinaryStream& outstream) const {
     // control flags
     outstream.WriteBool(flag_segment);
@@ -38,6 +33,11 @@ void PacketHeader::Serialize(BinaryStream& outstream) const {
         outstream.WriteInt16(length & 0xFFFF);
         outstream.WriteInt16(offset & 0xFFFF);
     }
+
+    if (flag_segment || offset > 0) {
+        outstream.WriteInt32(splitContainer);
+        outstream.WriteInt32(splitIndex);
+    }
 }
 
 bool PacketHeader::Deserialize(BinaryStream& instream) {
@@ -46,8 +46,6 @@ bool PacketHeader::Deserialize(BinaryStream& instream) {
 
     flag_segment = instream.ReadBool();
     flag_jumbo = instream.ReadBool();
-
-    // instream.Align();
 
     id = instream.ReadUInt32();
     options = static_cast<PacketOptions>(instream.ReadByte());
@@ -69,9 +67,14 @@ bool PacketHeader::Deserialize(BinaryStream& instream) {
         offset = instream.ReadUInt16();
     }
 
-    // sanity check
-    if (length > cfg::PACKET_MAX_LENGTH || offset >= cfg::PACKET_MAX_LENGTH)
-        return false;
+    if (flag_segment || offset > 0) {
+        if (instream.IsEOF(2 * sizeof(uint32_t)))
+            return false;
 
-    return true;
+        splitContainer = instream.ReadUInt32();
+        splitIndex = instream.ReadUInt32();
+    }
+
+    // sanity check
+    return length <= cfg::PACKET_MAX_LENGTH && offset < cfg::PACKET_MAX_LENGTH;
 }

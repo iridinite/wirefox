@@ -45,6 +45,12 @@ namespace wirefox {
             /// The offset into the complete payload, in bytes. Zero if not segmented packet.
             uint32_t    offset = 0;
 
+            /// The ID number that represents the entire group of split packet segments. Zero if not segmented packet.
+            PacketID    splitContainer = 0;
+
+            /// The index number of this segment. Zero if not segmented packet.
+            uint32_t    splitIndex = 0;
+
             PacketHeader() = default;
 
             /**

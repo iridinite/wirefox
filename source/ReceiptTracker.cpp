@@ -24,10 +24,29 @@ void ReceiptTracker::Track(PacketID id) {
 }
 
 void ReceiptTracker::Acknowledge(PacketID id) {
+    auto it = m_splits.begin();
+    while (it != m_splits.end()) {
+        // remove this PacketID from the split group
+        it->second.erase(id);
+
+        // if no more entries exist in the split group, the entire thing was delivered
+        if (it->second.empty()) {
+            PacketID container = it->first;
+            it = m_splits.erase(it);
+            Acknowledge(container);
+        } else {
+            ++it;
+        }
+    }
+
     if (!m_tracker.count(id)) return;
 
     m_tracker.erase(id);
     m_master->OnMessageReceipt(id, true);
+}
+
+void ReceiptTracker::RegisterSplitPacket(PacketID container, std::set<PacketID> segments) {
+    m_splits.emplace(container, std::move(segments));
 }
 
 void ReceiptTracker::Update() {

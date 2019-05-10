@@ -47,16 +47,19 @@ namespace wirefox {
              */
             void            Acknowledge(PacketID id);
 
+            void            RegisterSplitPacket(PacketID container, std::set<PacketID> segments);
+
             /**
              * \brief Prunes old datagrams and posts negative receipts for old, unacked packets.
              */
             void            Update();
 
         private:
-            Peer*           m_master;
-            RemotePeer&     m_remote;
+            Peer* m_master;
+            RemotePeer& m_remote;
 
-            std::set<PacketID>  m_tracker;
+            std::unordered_map<PacketID, std::set<PacketID>> m_splits;
+            std::set<PacketID> m_tracker;
         };
 
         /// \endcond

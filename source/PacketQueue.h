@@ -131,6 +131,7 @@ namespace wirefox {
             void            OnWriteFinished(RemotePeer* remote, DatagramID id, bool error, size_t transferred);
             void            OnReadFinished(bool error, const RemoteAddress& sender, const uint8_t* buffer, size_t transferred);
 
+            void            HandleSplitPacket(RemotePeer& remote, const PacketHeader& header, BinaryStream& instream);
             void            HandleIncomingPacket(RemotePeer& remote, const PacketHeader& header, std::unique_ptr<Packet> packet);
 
             Peer*               m_peer;
