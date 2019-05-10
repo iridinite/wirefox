@@ -35,14 +35,14 @@ namespace wirefox {
             /// Copy constructor.
             ChannelBuffer(const ChannelBuffer&) = default;
             /// Move constructor.
-            ChannelBuffer(ChannelBuffer&&) = default;
+            ChannelBuffer(ChannelBuffer&&) noexcept = default;
             /// Destructor.
             ~ChannelBuffer() = default;
 
             /// Copy assignment operator.
             ChannelBuffer& operator=(const ChannelBuffer&) = default;
             /// Move assignment operator.
-            ChannelBuffer& operator=(ChannelBuffer&&) = default;
+            ChannelBuffer& operator=(ChannelBuffer&&) noexcept = default;
 
             /**
              * \brief Processes an incoming payload.
