@@ -35,9 +35,17 @@ namespace wirefox {
                 /// Destructor, securely erases the keypair from memory.
                 ~Keypair();
 
+                /// Create new keypair meant for persistent identities (e.g. signing authentication challenges).
                 static std::shared_ptr<Keypair> CreateIdentity();
+                /// Create new ephemeral keypair meant for the key exchange. These keys should not be stored.
                 static std::shared_ptr<Keypair> CreateKeyExchange();
 
+                /**
+                 * \brief Copies the keys from this Keypair into user-specified buffers.
+                 * 
+                 * \param[out]  out_secret  A buffer where the secret key will be written to.
+                 * \param[out]  out_public  A buffer where the public key will be written to.
+                 */
                 void CopyTo(uint8_t* out_secret, uint8_t* out_public) const;
 
             private:
@@ -45,12 +53,18 @@ namespace wirefox {
                 uint8_t key_secret[KEY_LENGTH];
             };
 
+            /// Default constructor
             EncryptionLayerSodium();
+            /// Copy constructor, disabled for security
             EncryptionLayerSodium(const EncryptionLayerSodium&) = delete;
+            /// Move constructor
             EncryptionLayerSodium(EncryptionLayerSodium&&) noexcept;
+            /// Destructor
             virtual ~EncryptionLayerSodium();
 
+            /// Copy assignment operator, disabled for security
             EncryptionLayerSodium& operator=(const EncryptionLayerSodium&) = delete;
+            /// Move assignment operator
             EncryptionLayerSodium& operator=(EncryptionLayerSodium&&) noexcept;
 
             bool GetNeedsToBail() const override;
@@ -64,6 +78,7 @@ namespace wirefox {
             bool HandleKeyExchange(Handshaker::Origin origin, BinaryStream& pubkey) override;
             bool HandleChallengeResponse(BinaryStream& instream) override;
             bool HandleChallengeIncoming(BinaryStream& instream, BinaryStream& answer) override;
+            /// \copydoc wirefox::detail::EncryptionLayer::SetLocalIdentity
             void SetLocalIdentity(std::shared_ptr<EncryptionLayer::Keypair> keypair) override;
             void ExpectRemoteIdentity(BinaryStream& pubkey) override;
 

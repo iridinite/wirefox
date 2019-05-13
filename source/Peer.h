@@ -75,6 +75,10 @@ namespace wirefox {
             void                        GenerateIdentity(uint8_t* key_secret, uint8_t* key_public) const override;
             size_t                      GetEncryptionKeyLength() const override;
             bool                        GetEncryptionEnabled() const override;
+
+            /**
+             * \brief Returns the cryptographic identity of this Peer.
+             */
             std::shared_ptr<EncryptionLayer::Keypair> GetEncryptionIdentity() const;
 
             /**

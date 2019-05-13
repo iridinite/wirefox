@@ -47,6 +47,15 @@ namespace wirefox {
              */
             void            Acknowledge(PacketID id);
 
+            /**
+             * \brief Registers a container packet with its list of segments, so it can be tracked.
+             * 
+             * When all IDs listed in \p segments are acknowledged, then \p container will be acknowledged
+             * as well. This enables ack receipts for split packets.
+             * 
+             * \param[in]   container   The ID that represents this group of split packets.
+             * \param[in]   segments    The list of sub-packets (segments) making up the split packet.
+             */
             void            RegisterSplitPacket(PacketID container, std::set<PacketID> segments);
 
             /**

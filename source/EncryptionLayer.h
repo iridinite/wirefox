@@ -63,12 +63,57 @@ namespace wirefox {
              */
             virtual BinaryStream GetEphemeralPublicKey() const = 0;
 
+            /**
+             * \brief Sets a flag indicating encryption should be used henceforth.
+             * 
+             * Meant to be used after the key exchange is complete, and the unencrypted key exchange packets
+             * have been correctly sent out.
+             */
             virtual void SetCryptoEstablished() = 0;
+
+            /**
+             * \brief Returns a boolean indicating whether encryption should be used.
+             * \sa SetCryptoEnabled()
+             */
             virtual bool GetCryptoEstablished() const = 0;
+
+            /**
+             * \brief Returns a boolean indicating whether the remote endpoint needs to be authenticated.
+             * 
+             * This is the case when the remote endpoint's public key is explicitly known, and thus
+             * a challenge is required as proof of identity.
+             */
             virtual bool GetNeedsChallenge() const = 0;
 
+            /**
+             * \brief Prepares an authentication challenge.
+             * 
+             * An authentication challenge is written to the output stream (its length is undefined),
+             * and the correct answer will be stored in this EncryptionLayer's state.
+             * 
+             * \param[out]  outstream   A stream that will be sent to the remote party.
+             */
             virtual void CreateChallenge(BinaryStream& outstream) = 0;
+
+            /**
+             * \brief Solves an incoming authentication challenge.
+             * 
+             * \returns A boolean indicating success. If false, the challenge was not meant for us
+             * or is otherwise corrupt. \p answer is only modified if this method returns true.
+             * 
+             * \param[in]   instream    A stream containing a challenge, as written by CreateChallenge().
+             * \param[out]  answer      A stream where our answer will be written.
+             */
             virtual bool HandleChallengeIncoming(BinaryStream& instream, BinaryStream& answer) = 0;
+
+            /**
+             * \brief Verifies an incoming answer to our challenge.
+             * 
+             * \returns A boolean indicating success. If true, the answer was correct. If false, something
+             * was wrong, and the identity of the remote endpoint cannot be verified.
+             * 
+             * \param[in]   instream    A stream containing the answer, as written by HandleChallengeIncoming().
+             */
             virtual bool HandleChallengeResponse(BinaryStream& instream) = 0;
 
             /**

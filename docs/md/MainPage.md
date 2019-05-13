@@ -14,10 +14,3 @@ Wirefox is a flexible, easy-to-use and no-nonsense networking library.
 - Supports LAN discovery, to detect game lobbies etc. on the local network
 
 This library is under active development, and might not ready to be used in production. Regardless, I'd love to hear from you if you have any thoughts or concerns!
-
-Planned features:
-
-- Custom packet prioritization
-- LAN discovery and pinging
-- Remote procedure calls
-- Encryption

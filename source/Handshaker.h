@@ -102,9 +102,11 @@ namespace wirefox {
              */
             void                    Reply(BinaryStream&& outstream, bool isRetry = false);
 
+            /// A pointer to the RemotePeer that owns this Handshaker.
             RemotePeer*             m_remote;
+            /// A pointer to the Peer that owns m_remote. Used for checking duplicate users, among other things.
             Peer*                   m_peer;
-
+            /// An owning pointer to an object that performs crypto setup for this connection.
             std::unique_ptr<EncryptionAuthenticator> m_auth;
 
         private:

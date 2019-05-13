@@ -94,6 +94,7 @@ namespace wirefox {
              *
              * \param[in]   packet      The packet to send out.
              * \param[in]   addr        The raw remote address to send data to.
+             * \param[in]   forceCryptoBy   If not nullptr, use this RemotePeer's crypto object to encrypt the out-of-band packet.
              */
             void            EnqueueOutOfBand(const Packet& packet, const RemoteAddress& addr, RemotePeer* forceCryptoBy);
 

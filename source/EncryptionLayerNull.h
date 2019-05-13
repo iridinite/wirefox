@@ -19,12 +19,18 @@ namespace wirefox {
          */
         class EncryptionLayerNull : public EncryptionLayer {
         public:
+            /// Default constructor
             EncryptionLayerNull() = default;
+            /// Copy constructor
             EncryptionLayerNull(const EncryptionLayerNull&) = delete;
+            /// Move constructor
             EncryptionLayerNull(EncryptionLayerNull&&) noexcept = default;
+            /// Default destructor
             virtual ~EncryptionLayerNull() = default;
 
+            /// Copy assignment operator
             EncryptionLayerNull& operator=(const EncryptionLayerNull&) = delete;
+            /// Move assignment operator
             EncryptionLayerNull& operator=(EncryptionLayerNull&&) noexcept = default;
 
             bool GetNeedsToBail() const override { return false; };

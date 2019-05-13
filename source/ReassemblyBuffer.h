@@ -51,12 +51,18 @@ namespace wirefox {
             ReassemblyBuffer& operator=(ReassemblyBuffer&&) noexcept;
 
             /**
-             * \brief
+             * \brief Inserts a received segment into the correct location in the buffer.
+             * 
+             * \param[in]   header      The header associated with the received segment.
+             * \param[in]   instream    A stream that contains the segment to be read.
              */
             void Insert(const PacketHeader& header, BinaryStream& instream);
 
             /**
-             * \brief
+             * \brief Attempts to reassemble a Packet with the specified container ID.
+             * 
+             * \param[in]   container   The packet ID that represents this group of segments.
+             * \returns     An owning pointer to a reassembled packet, or nullptr if not yet ready.
              */
             std::unique_ptr<Packet> Reassemble(PacketID container);
 
