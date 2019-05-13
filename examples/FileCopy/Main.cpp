@@ -5,9 +5,9 @@
 
 using namespace wirefox;
 
-constexpr static size_t CHUNKS_IN_FLIGHT = 64;
-constexpr static size_t CHUNK_SIZE = 1024;
-static_assert(CHUNK_SIZE <= (wirefox::cfg::MTU - 100), "CHUNK_SIZE must leave room for packet headers");
+constexpr static size_t CHUNKS_IN_FLIGHT = 1;
+constexpr static size_t CHUNK_SIZE = 65536;
+//static_assert(CHUNK_SIZE <= (wirefox::cfg::MTU - 100), "CHUNK_SIZE must leave room for packet headers");
 
 enum class SendMode {
     UNSET,
@@ -49,10 +49,7 @@ void StartSender(const std::string& filename, const std::string& receiver, uint1
     }
 
     std::set<PacketID> awaiting;
-
     auto timeStart = std::chrono::steady_clock::now();
-    bool eofPacketExpected = false; // because there is no 'unset' PacketID value
-    PacketID eofPacketID = 0;
 
     // program loop
     while (true) {
@@ -86,16 +83,7 @@ void StartSender(const std::string& filename, const std::string& receiver, uint1
                 // Find the packetID mentioned in this receipt, and remove it from the awaiting list.
                 auto instream = recv->GetStream();
                 PacketID id = instream.ReadUInt32();
-
-                // we finished all delivery
-                if (eofPacketExpected && id == eofPacketID) {
-                    auto timeElapsed = std::chrono::steady_clock::now() - timeStart;
-                    std::cout << "Sender: All packets delivered; disconnecting." << std::endl;
-                    std::cout << "Sender: Time elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeElapsed).count() << " ms" << std::endl;
-                    
-                    peer->Disconnect(receiverID);
-                    break;
-                }
+                std::cout << "Sender: Got ack: " << id << std::endl;
 
                 // otherwise, this ack is about one of the file chunks
                 chunksSent++;
@@ -115,7 +103,17 @@ void StartSender(const std::string& filename, const std::string& receiver, uint1
                 assert(false);
                 break;
             default:
-                break;
+                switch (static_cast<CustomCommand>(recv->GetCommand())) {
+                case CustomCommand::FILE_END:
+                    // we finished all delivery
+                    auto timeElapsed = std::chrono::steady_clock::now() - timeStart;
+                    std::cout << "Sender: All packets delivered; disconnecting." << std::endl;
+                    std::cout << "Sender: Time elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeElapsed).count() << " ms" << std::endl;
+
+                    peer->Disconnect(receiverID);
+                default:
+                    break;
+                }
             }
 
             recv = peer->Receive();
@@ -130,8 +128,8 @@ void StartSender(const std::string& filename, const std::string& receiver, uint1
 
             // fire ze missiles
             BinaryStream outstream(CHUNK_SIZE);
-            outstream.WriteInt16(static_cast<uint16_t>(infile.gcount()));
-            outstream.WriteBytes(chunk, CHUNK_SIZE);
+            outstream.WriteInt32(static_cast<uint32_t>(infile.gcount()));
+            outstream.WriteBytes(chunk, infile.gcount());
             Packet packet(static_cast<PacketCommand>(CustomCommand::FILE_CHUNK), std::move(outstream));
             auto packetID = peer->Send(packet, receiverID, PacketOptions::RELIABLE | PacketOptions::WITH_RECEIPT, PacketPriority::MEDIUM, channel);
 
@@ -140,10 +138,9 @@ void StartSender(const std::string& filename, const std::string& receiver, uint1
 
             // Send out the EOF packet if we ran out of bytes to send
             if (infile.eof()) {
-                std::cout << "Sender: Progress: 100%" << std::endl;
+                std::cout << "Sender: All chunks are in transit" << std::endl;
                 Packet packetEof(static_cast<PacketCommand>(CustomCommand::FILE_END), nullptr, 0);
-                eofPacketID = peer->Send(packetEof, receiverID, PacketOptions::RELIABLE | PacketOptions::WITH_RECEIPT, PacketPriority::MEDIUM, channel);
-                eofPacketExpected = true;
+                peer->Send(packetEof, receiverID, PacketOptions::RELIABLE | PacketOptions::WITH_RECEIPT, PacketPriority::MEDIUM, channel);
             }
         }
     }
@@ -152,12 +149,13 @@ void StartSender(const std::string& filename, const std::string& receiver, uint1
 void StartReceiver(uint16_t port) {
     // set up Wirefox peer
     auto peer = IPeer::Factory::Create();
+    auto channel = peer->MakeChannel(ChannelMode::ORDERED);
     peer->Bind(SocketProtocol::IPv4, port);
     peer->SetMaximumIncomingPeers(1);
     peer->SetNetworkSimulation(0.05f, 1);
-    peer->MakeChannel(ChannelMode::ORDERED); // result is not used, but channel needs to be registered at least
 
     std::ofstream outfile;
+    PeerID senderID = 0;
     size_t filelen = 0;
     size_t filerecv = 0;
 
@@ -169,8 +167,8 @@ void StartReceiver(uint16_t port) {
         while (recv) {
             switch (recv->GetCommand()) {
             case PacketCommand::NOTIFY_CONNECTION_INCOMING:
-                // In this demo, we don't actually care about who we're connected to.
                 std::cout << "Receiver: Incoming connection." << std::endl;
+                senderID = recv->GetSender();
                 break;
             case PacketCommand::NOTIFY_CONNECTION_LOST:
             case PacketCommand::NOTIFY_DISCONNECTED:
@@ -205,7 +203,7 @@ void StartReceiver(uint16_t port) {
 
                     // read the chunk length
                     auto instream = recv->GetStream();
-                    auto length = instream.ReadUInt16();
+                    auto length = instream.ReadUInt32();
                     assert(length <= CHUNK_SIZE);
                     filerecv += length;
 
@@ -218,12 +216,13 @@ void StartReceiver(uint16_t port) {
                 case CustomCommand::FILE_END:
                     std::cout << "Receiver: All packets received, closing file." << std::endl;
                     std::cout << "Receiver: Received " << filerecv << " of " << filelen << " bytes." << std::endl;
-                    if (outfile.is_open()) {
-                        outfile.flush();
-                        outfile.close();
-                    }
 
+                    Packet packetEof(static_cast<PacketCommand>(CustomCommand::FILE_END), nullptr, 0);
+                    peer->Send(packetEof, senderID, PacketOptions::RELIABLE | PacketOptions::WITH_RECEIPT, PacketPriority::MEDIUM, channel);
+
+                    // disconnect from remote and allow some time to send packets
                     peer->Disconnect(recv->GetSender());
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
                     return;
                 }
             }
@@ -293,8 +292,8 @@ int main(int argc, const char** argv) {
         break;
     default:
         std::cout << "Usage:" << std::endl;
-        std::cout << "DemoFileCopy -recv [-port <x>]" << std::endl;
-        std::cout << "DemoFileCopy -send <filename> -to <host>" << std::endl;
+        std::cout << "DemoFileCopy [-port <x>] -recv" << std::endl;
+        std::cout << "DemoFileCopy [-port <x>] -send <filename> -to <host>" << std::endl;
         break;
     }
 
