@@ -265,7 +265,28 @@ void Peer::SendOutOfBand(const Packet& packet, const RemoteAddress& addr) {
 }
 
 std::unique_ptr<Packet> Peer::Receive() {
+#if WIREFOX_ENABLE_NETWORK_SIM
+    // put received packets into a delay queue
+    while (auto p = m_queue->DequeueIncoming()) {
+        m_simqueue.push_back(std::make_pair(std::move(p), Time::Now() + Time::FromMilliseconds(m_simExtraPing)));
+    }
+    // release packets from the queue that have had their extra ping delay elapsed.
+    // I expect this to be turned off in release builds, so this overhead should be acceptable during debug.
+    auto itr = m_simqueue.begin();
+    while (itr != m_simqueue.end()) {
+        if (Time::Elapsed(itr->second)) {
+            auto p = std::move(itr->first);
+            m_simqueue.erase(itr);
+            return p;
+        }
+        ++itr;
+    }
+
+    return nullptr;
+
+#else
     return m_queue->DequeueIncoming();
+#endif
 }
 
 void Peer::SetOfflineAdvertisement(const BinaryStream& data) {

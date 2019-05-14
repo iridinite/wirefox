@@ -209,7 +209,7 @@ namespace wirefox {
 #if WIREFOX_ENABLE_NETWORK_SIM
             float                       m_simLossRate {0};
             unsigned                    m_simExtraPing {0};
-            std::mt19937_64             m_simrng {Time::Now()};
+            std::mt19937_64             m_simrng {static_cast<std::mt19937_64::result_type>(Time::Now())};
             std::vector<std::pair<std::unique_ptr<Packet>, Timestamp>>
                                         m_simqueue;
 #endif
