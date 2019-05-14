@@ -43,8 +43,9 @@ Peer::Peer(Peer&& other) noexcept
 }
 
 Peer::~Peer() {
-    // clean shutdown, stop worker thread before deallocating everything
+    // clean shutdown, stop worker threads before deallocating everything
     m_masterSocket->Unbind();
+    m_queue->Stop();
 }
 
 Peer& Peer::operator=(Peer&& other) noexcept {

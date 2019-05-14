@@ -27,11 +27,15 @@ PacketQueue::PacketQueue(Peer* peer)
 }
 
 PacketQueue::~PacketQueue() {
-    // stop thread
-    m_updateThreadAbort.store(true);
-    m_updateNotify.Signal();
-    if (m_updateThread.joinable())
-        m_updateThread.join();
+	Stop();
+}
+
+void PacketQueue::Stop() {
+	// stop thread
+	m_updateThreadAbort.store(true);
+	m_updateNotify.Signal();
+	if (m_updateThread.joinable())
+		m_updateThread.join();
 }
 
 PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, PacketOptions options, PacketPriority priority, const Channel& channel) {

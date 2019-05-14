@@ -73,6 +73,11 @@ namespace wirefox {
             ~PacketQueue();
 
             /**
+             * \brief Stops the worker thread. Use this before deallocating everything, to avoid segfaults.
+             */
+            void            Stop();
+
+            /**
              * \brief Send an outgoing message.
              *
              * Adds a packet onto the outgoing queue. The packet and its contents will be copied, so you can safely deallocate
