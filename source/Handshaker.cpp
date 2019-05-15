@@ -18,7 +18,7 @@ using namespace wirefox::detail;
 static_assert(cfg::CONNECT_RETRY_COUNT >= 1, "CONNECT_RETRY_COUNT must be at least 1");
 static_assert(cfg::CONNECT_RETRY_DELAY >= 1, "CONNECT_RETRY_DELAY must be at least 1");
 
-Handshaker::Handshaker(Peer* master, RemotePeer* remote, Origin origin)
+Handshaker::Handshaker(Peer* master, RemotePeer* remote, ConnectionOrigin origin)
     : m_remote(remote)
     , m_peer(master)
     , m_replyHandler(nullptr)
@@ -65,7 +65,7 @@ void Handshaker::Complete(ConnectResult result) {
         // pick the appropriate command id: if the connection was locally started, then the user expects a success/failure,
         // otherwise if it was remote then the user only expects a 'peer incoming' notification
         PacketCommand notifyCmd;
-        if (m_origin == Origin::SELF)
+        if (m_origin == ConnectionOrigin::SELF)
             notifyCmd = result == ConnectResult::OK
                 ? PacketCommand::NOTIFY_CONNECT_SUCCESS
                 : PacketCommand::NOTIFY_CONNECT_FAILED;

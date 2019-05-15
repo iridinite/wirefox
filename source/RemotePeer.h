@@ -8,13 +8,13 @@
 
 #pragma once
 #include "Handshaker.h"
-#include "RemoteAddress.h"
 #include "PacketQueue.h"
 #include "CongestionControl.h"
 #include "ChannelBuffer.h"
 #include "ReceiptTracker.h"
 #include "EncryptionLayer.h"
 #include "ReassemblyBuffer.h"
+#include "WirefoxConfigRefs.h"
 
 namespace wirefox {
 
@@ -79,7 +79,7 @@ namespace wirefox {
              * \param[in]   master      The Peer that owns this RemotePeer instance.
              * \param[in]   origin      Sets who initiated the connection request.
              */
-            void        Setup(Peer* master, Handshaker::Origin origin);
+            void        Setup(Peer* master, ConnectionOrigin origin);
 
             /// Clears the state of this RemotePeer, and makes it available for new connections again.
             void        Reset();

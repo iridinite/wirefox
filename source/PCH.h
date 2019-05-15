@@ -20,12 +20,7 @@
 #define NO_MIN_MAX
 #endif
 
-#ifdef _MSC_VER
-// suppress code analysis warnings in library code
-#include <codeanalysis/warnings.h>
-#pragma warning(push)
-#pragma warning(disable: ALL_CODE_ANALYSIS_WARNINGS)
-#endif
+#pragma warning (push, 0)
 
 #include <iostream>
 #include <cstdio>
@@ -49,9 +44,7 @@
 
 #include <asio.hpp>
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+#pragma warning (pop)
 
 namespace wirefox {}
 using namespace wirefox;

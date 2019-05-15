@@ -39,13 +39,9 @@ target_sources(Wirefox
     ${thisfolder}/ReassemblyBuffer.h
     ${thisfolder}/ReceiptTracker.cpp
     ${thisfolder}/ReceiptTracker.h
-    ${thisfolder}/RemoteAddress.cpp
-    ${thisfolder}/RemoteAddress.h
     ${thisfolder}/RemotePeer.cpp
     ${thisfolder}/RemotePeer.h
     ${thisfolder}/Socket.h
-    ${thisfolder}/SocketUDP.cpp
-    ${thisfolder}/SocketUDP.h
     ${thisfolder}/WirefoxTime.cpp
     ${thisfolder}/WirefoxCBindings.cpp
     ${thisfolder}/WirefoxConfigRefs.h
@@ -54,3 +50,4 @@ target_include_directories(Wirefox
   PRIVATE
     ${thisfolder}
 )
+  add_subdirectory(platform/desktop)

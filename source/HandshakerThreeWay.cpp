@@ -22,7 +22,7 @@ static constexpr size_t HANDSHAKE_HEADER_LEN =
 
 void HandshakerThreeWay::Begin() {
     // Begin should only be called if this local socket is the one initiating the connection
-    assert(GetOrigin() == Origin::SELF);
+    assert(GetOrigin() == ConnectionOrigin::SELF);
 
     // write a connection request and send it
     BinaryStream hello(HANDSHAKE_HEADER_LEN);
@@ -96,7 +96,7 @@ void HandshakerThreeWay::Handle(const Packet& packet) {
     if (m_expectedOpcode == NOT_STARTED && opcode == INITIAL_CLIENT) {
         // we're the server, and client just sent first part of handshake
         //assert(opcode == INITIAL_CLIENT);
-        assert(GetOrigin() == Origin::REMOTE);
+        assert(GetOrigin() == ConnectionOrigin::REMOTE);
         //if (opcode != INITIAL_CLIENT) return;
 
         // make sure that both sides agree whether they want security or not
@@ -115,13 +115,13 @@ void HandshakerThreeWay::Handle(const Packet& packet) {
 
     } else if (m_expectedOpcode == UNENCRYPTED_ACK && opcode == m_expectedOpcode) {
         // we're the server, and client just sent part 3 of the handshake
-        assert(GetOrigin() == Origin::REMOTE);
+        assert(GetOrigin() == ConnectionOrigin::REMOTE);
         // three-way handshake completed
         Complete(ConnectResult::OK);
 
     } else if (m_expectedOpcode == INITIAL_SERVER && opcode == m_expectedOpcode) {
         // we're the client, and server just replied to our initial request
-        assert(GetOrigin() == Origin::SELF);
+        assert(GetOrigin() == ConnectionOrigin::SELF);
 
         if (m_peer->GetEncryptionEnabled()) {
             // basic handshake is now finished, begin crypto key exchange

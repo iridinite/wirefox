@@ -27,7 +27,7 @@ namespace wirefox {
              * \param[in]   origin      Specifies which party initiated this connection.
              * \param[in]   crypto      The EncryptionLayer instance that must be configured.
              */
-            EncryptionAuthenticator(Handshaker::Origin origin, EncryptionLayer& crypto);
+            EncryptionAuthenticator(ConnectionOrigin origin, EncryptionLayer& crypto);
             EncryptionAuthenticator(const EncryptionAuthenticator&) = delete;
             EncryptionAuthenticator(EncryptionAuthenticator&&) = delete;
             ~EncryptionAuthenticator() = default;
@@ -38,7 +38,7 @@ namespace wirefox {
             /**
              * \brief Initiates the cryptographic handshake.
              * 
-             * Meant to be used by the initiating peer (Origin::SELF) after the basic handshake
+             * Meant to be used by the initiating peer (ConnectionOrigin::SELF) after the basic handshake
              * is complete. This function will initiate the key exchange.
              * 
              * \param[out]  outstream   Stream to be sent to the remote endpoint.
@@ -65,7 +65,7 @@ namespace wirefox {
             ConnectResult HandleAuth(BinaryStream& instream, BinaryStream& outstream);
 
             EncryptionLayer& m_crypto;
-            Handshaker::Origin m_origin;
+            ConnectionOrigin m_origin;
 
             enum {
                 STATE_KEY_EXCHANGE,

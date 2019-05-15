@@ -29,7 +29,7 @@ namespace wirefox {
              * \param[in]   remote  The RemotePeer controlled by this Handshaker. Some fields are filled in during handshake.
              * \param[in]   origin  Indicates which endpoint initiated this handshake attempt.
              */
-            HandshakerThreeWay(Peer* master, RemotePeer* remote, Origin origin)
+            HandshakerThreeWay(Peer* master, RemotePeer* remote, ConnectionOrigin origin)
                 : Handshaker(master, remote, origin)
                 , m_expectedOpcode(NOT_STARTED) {}
 

@@ -20,7 +20,6 @@ namespace wirefox {
 
         struct PacketHeader;
         struct RemotePeer;
-        struct RemoteAddress;
 
         /**
          * \cond WIREFOX_INTERNAL

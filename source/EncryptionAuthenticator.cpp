@@ -12,7 +12,7 @@
 
 using namespace detail;
 
-EncryptionAuthenticator::EncryptionAuthenticator(Handshaker::Origin origin, EncryptionLayer& crypto)
+EncryptionAuthenticator::EncryptionAuthenticator(ConnectionOrigin origin, EncryptionLayer& crypto)
     : m_crypto(crypto)
     , m_origin(origin)
     , m_state(STATE_KEY_EXCHANGE)
@@ -36,7 +36,7 @@ ConnectResult EncryptionAuthenticator::Handle(BinaryStream& instream, BinaryStre
     case STATE_AUTHENTICATION:
         return HandleAuth(instream, outstream);
     case STATE_DONE:
-        assert(m_origin == Handshaker::Origin::REMOTE);
+        assert(m_origin == ConnectionOrigin::REMOTE);
         return ConnectResult::OK;
     default:
         assert(false && "corrupt AUTH_MSG passed to EncryptionAuthenticator");
@@ -64,7 +64,7 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
         return ConnectResult::INCORRECT_REMOTE_IDENTITY;
 
     switch (m_origin) {
-    case Handshaker::Origin::SELF:
+    case ConnectionOrigin::SELF:
         // server just sent us their part of the key xchg
 
         // our next message must be sent with crypto! only kx is done unencrypted
@@ -83,7 +83,7 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
         }
 
         break;
-    case Handshaker::Origin::REMOTE:
+    case ConnectionOrigin::REMOTE:
         // give the client our ephemeral public key, for the key xchg
         outstream.WriteByte(STATE_KEY_EXCHANGE);
         outstream.WriteBytes(m_crypto.GetEphemeralPublicKey());
@@ -104,7 +104,7 @@ ConnectResult EncryptionAuthenticator::HandleKeyExchange(BinaryStream& instream,
 }
 
 ConnectResult EncryptionAuthenticator::HandleAuth(BinaryStream& instream, BinaryStream& outstream) {
-    if (m_origin == Handshaker::Origin::REMOTE) {
+    if (m_origin == ConnectionOrigin::REMOTE) {
         // incoming challenge, solve it
         outstream.WriteByte(STATE_AUTHENTICATION);
         if (!m_crypto.HandleChallengeIncoming(instream, outstream))

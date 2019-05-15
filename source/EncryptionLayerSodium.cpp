@@ -193,7 +193,7 @@ void EncryptionLayerSodium::CreateChallenge(BinaryStream& outstream) {
     outstream.WriteBytes(encrypted, sizeof encrypted);
 }
 
-bool EncryptionLayerSodium::HandleKeyExchange(Handshaker::Origin origin, BinaryStream& pubkey) {
+bool EncryptionLayerSodium::HandleKeyExchange(ConnectionOrigin origin, BinaryStream& pubkey) {
     // read remote kx public key
     uint8_t remotekey[KEY_LENGTH];
     pubkey.ReadBytes(remotekey, KEY_LENGTH);
@@ -204,16 +204,16 @@ bool EncryptionLayerSodium::HandleKeyExchange(Handshaker::Origin origin, BinaryS
 
     // compute session keys now that we know all required keys
     switch (origin) {
-    case Handshaker::Origin::SELF:
+    case ConnectionOrigin::SELF:
         if (crypto_kx_client_session_keys(m_key_rx, m_key_tx, m_kx->key_public, m_kx->key_secret, remotekey) != 0)
             m_error = true;
         break;
-    case Handshaker::Origin::REMOTE:
+    case ConnectionOrigin::REMOTE:
         if (crypto_kx_server_session_keys(m_key_rx, m_key_tx, m_kx->key_public, m_kx->key_secret, remotekey) != 0)
             m_error = true;
         break;
     default:
-        assert(false && "invalid Handshaker::Origin in EncryptionLayerSodium::HandleKeyExchange");
+        assert(false && "invalid Handshaker::ConnectionOrigin in EncryptionLayerSodium::HandleKeyExchange");
         break;
     }
 

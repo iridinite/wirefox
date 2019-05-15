@@ -10,6 +10,7 @@
 #include "Enumerations.h"
 #include "BinaryStream.h"
 #include "WirefoxTime.h"
+#include "EncryptionAuthenticator.h"
 
 namespace wirefox {
 
@@ -21,7 +22,6 @@ namespace wirefox {
         struct PacketHeader;
         struct RemotePeer;
         class Peer;
-        class EncryptionAuthenticator;
 
         /**
          * \cond WIREFOX_INTERNAL
@@ -32,13 +32,6 @@ namespace wirefox {
          */
         class Handshaker {
         public:
-            /// Indicates which party initiated a handshake (or connection).
-            enum class Origin {
-                INVALID,    ///< Invalid setting. Used by Remote #0 to indicate no handshake.
-                SELF,       ///< We initiated the handshake.
-                REMOTE      ///< A remote party initiated the handshake.
-            };
-
             /// Represents a handler for sending out handshake fragments. The parameter is a packet payload
             /// that was passed as a movable BinaryStream.
             typedef std::function<void(BinaryStream&& outstream)> ReplyHandler_t;
@@ -70,7 +63,7 @@ namespace wirefox {
             void                    Update();
 
             /// Returns a value indicating who initiated this handshake.
-            Origin                  GetOrigin() const noexcept { return m_origin; }
+            ConnectionOrigin                  GetOrigin() const noexcept { return m_origin; }
 
             /// Returns a value indicating the current status of the handshake sequence.
             ConnectResult           GetResult() const noexcept { return m_result; }
@@ -92,7 +85,7 @@ namespace wirefox {
              * \param[in]   remote  The RemotePeer controlled by this Handshaker. Some fields are filled in during handshake.
              * \param[in]   origin  Indicates which endpoint initiated this handshake attempt.
              */
-            Handshaker(Peer* master, RemotePeer* remote, Origin origin);
+            Handshaker(Peer* master, RemotePeer* remote, ConnectionOrigin origin);
 
             /**
              * \brief Send a handshake part to the remote endpoint.
@@ -113,7 +106,7 @@ namespace wirefox {
             ReplyHandler_t          m_replyHandler;
             CompletionHandler_t     m_completionHandler;
 
-            Origin                  m_origin;
+            ConnectionOrigin                  m_origin;
             ConnectResult           m_result;
 
             BinaryStream            m_lastReply;

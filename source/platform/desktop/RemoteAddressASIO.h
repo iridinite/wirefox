@@ -16,17 +16,17 @@ namespace wirefox {
          * \cond WIREFOX_INTERNAL
          * \brief Represents the network address of a remote endpoint.
          */
-        struct RemoteAddress {
+        struct RemoteAddressASIO {
             friend class SocketUDP;
 
-            RemoteAddress() = default;
-            ~RemoteAddress() = default;
+            RemoteAddressASIO() = default;
+            ~RemoteAddressASIO() = default;
 
             /// Equality operator.
-            bool operator==(const RemoteAddress& rhs) const;
+            bool operator==(const RemoteAddressASIO& rhs) const;
 
             /// Inequality operator.
-            bool operator!=(const RemoteAddress& rhs) const;
+            bool operator!=(const RemoteAddressASIO& rhs) const;
 
             /// Returns a string version of this address' hostname or IP address.
             std::string ToString() const;

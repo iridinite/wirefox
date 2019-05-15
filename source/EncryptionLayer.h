@@ -7,8 +7,8 @@
  */
 
 #pragma once
+#include "Enumerations.h"
 #include "BinaryStream.h"
-#include "Handshaker.h"
 
 namespace wirefox {
 
@@ -128,7 +128,7 @@ namespace wirefox {
              * \returns False if the key is incorrect/suspicious, e.g. if it mismatches the key set by
              * ExpectRemoteIdentity(). Otherwise, returns true.
              */
-            virtual bool HandleKeyExchange(Handshaker::Origin origin, BinaryStream& pubkey) = 0;
+            virtual bool HandleKeyExchange(ConnectionOrigin origin, BinaryStream& pubkey) = 0;
 
             /**
              * \brief Sets the keypair that represents the local peer.

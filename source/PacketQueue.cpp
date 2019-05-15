@@ -375,12 +375,10 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 }
 
 void PacketQueue::HandleSplitPacket(RemotePeer& remote, const PacketHeader& header, BinaryStream& instream) {
-    //std::cout << "Insert split packet " << header.splitContainer << "." << header.splitIndex << ", wrapped by #" << header.id << std::endl;
     remote.assembly.Insert(header, instream);
 
     if (auto p = remote.assembly.Reassemble(header.splitContainer))
-        //if (remote.congestion->NotifyReceivedPacket(header.splitContainer) == CongestionControl::RecvState::NEW)
-            HandleIncomingPacket(remote, header, std::move(p));
+        HandleIncomingPacket(remote, header, std::move(p));
 }
 
 void PacketQueue::HandleIncomingPacket(RemotePeer& remote, const PacketHeader& header, std::unique_ptr<Packet> packet) {
@@ -395,7 +393,7 @@ void PacketQueue::HandleIncomingPacket(RemotePeer& remote, const PacketHeader& h
                 WIREFOX_LOCK_GUARD(m_lockInbox);
                 m_inbox.push(std::move(eligiblePacket));
             }
-            
+
             eligiblePacket = channel->Dequeue();
         }
 

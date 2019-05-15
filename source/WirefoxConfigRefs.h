@@ -23,6 +23,7 @@
 
 // DefaultSocket
 #include "SocketUDP.h"
+#include "RemoteAddressASIO.h"
 
 // DefaultHandshaker
 #include "HandshakerThreeWay.h"

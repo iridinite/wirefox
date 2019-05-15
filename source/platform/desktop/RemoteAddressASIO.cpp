@@ -7,19 +7,19 @@
  */
 
 #include "PCH.h"
-#include "RemoteAddress.h"
+#include "RemoteAddressASIO.h"
 
-using namespace wirefox::detail;
+using namespace detail;
 
-bool RemoteAddress::operator==(const RemoteAddress& rhs) const {
+bool RemoteAddressASIO::operator==(const RemoteAddressASIO& rhs) const {
     return endpoint_udp == rhs.endpoint_udp;
 }
 
-bool RemoteAddress::operator!=(const RemoteAddress& rhs) const {
+bool RemoteAddressASIO::operator!=(const RemoteAddressASIO& rhs) const {
     return !(*this == rhs);
 }
 
-std::string RemoteAddress::ToString() const {
+std::string RemoteAddressASIO::ToString() const {
     std::stringstream txt;
     txt << endpoint_udp.address().to_string();
     return txt.str();

@@ -75,7 +75,7 @@ namespace wirefox {
             bool GetCryptoEstablished() const override;
             bool GetNeedsChallenge() const override;
             void CreateChallenge(BinaryStream& outstream) override;
-            bool HandleKeyExchange(Handshaker::Origin origin, BinaryStream& pubkey) override;
+            bool HandleKeyExchange(ConnectionOrigin origin, BinaryStream& pubkey) override;
             bool HandleChallengeResponse(BinaryStream& instream) override;
             bool HandleChallengeIncoming(BinaryStream& instream, BinaryStream& answer) override;
             /// \copydoc wirefox::detail::EncryptionLayer::SetLocalIdentity

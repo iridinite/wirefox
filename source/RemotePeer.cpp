@@ -118,13 +118,13 @@ void RemotePeer::RemovePacketFromOutbox(PacketID remove) {
         outbox.erase(it);
 }
 
-void RemotePeer::Setup(Peer* master, Handshaker::Origin origin) {
+void RemotePeer::Setup(Peer* master, ConnectionOrigin origin) {
     reserved = true;
     congestion = std::make_unique<cfg::DefaultCongestionControl>();
     receipt = std::make_unique<ReceiptTracker>(master, *this);
 
     // used by remote #0 to stop handshake from being instantiated, as out-of-band comms should not do handshakes
-    if (origin != Handshaker::Origin::INVALID) {
+    if (origin != ConnectionOrigin::INVALID) {
         crypto = std::make_shared<cfg::DefaultEncryption>();
         crypto->SetLocalIdentity(master->GetEncryptionIdentity());
         handshake = std::make_unique<cfg::DefaultHandshaker>(master, this, origin);

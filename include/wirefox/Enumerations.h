@@ -73,6 +73,13 @@ namespace wirefox {
         IPv6
     };
 
+    /// Indicates which party initiated a handshake (or connection).
+    enum class ConnectionOrigin {
+        INVALID,    ///< Invalid setting. Used by Remote #0 to indicate no handshake.
+        SELF,       ///< We initiated the handshake.
+        REMOTE      ///< A remote party initiated the handshake.
+    };
+
     /// Indicates how packets in the same channel should be delivered relative to each other.
     enum class ChannelMode {
         /// Packets are delivered as they arrived.

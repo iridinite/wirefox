@@ -9,9 +9,9 @@
 #pragma once
 #include "Packet.h"
 #include "BinaryStream.h"
-#include "RemoteAddress.h"
 #include "WirefoxTime.h"
 #include "AwaitableEvent.h"
+#include "WirefoxConfigRefs.h"
 
 namespace wirefox {
 
@@ -20,7 +20,6 @@ namespace wirefox {
     namespace detail {
 
         struct PacketHeader;
-        struct RemoteAddress;
         struct RemotePeer;
         class Peer;
         class Socket;

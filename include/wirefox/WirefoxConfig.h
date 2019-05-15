@@ -25,6 +25,17 @@ namespace wirefox {
         class SocketUDP;
         class EncryptionLayerSodium;
         class EncryptionLayerNull;
+
+        struct RemoteAddressNX;
+        struct RemoteAddressASIO;
+
+        /// Represents a remote socket address.
+        using RemoteAddress =
+#ifdef WIREFOX_PLATFORM_NX
+            RemoteAddressNX;
+#else
+            RemoteAddressASIO;
+#endif
     }
 
     /// Represents a unique identifier for a packet. This is used for tracking which packets are associated with which datagrams.

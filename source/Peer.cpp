@@ -81,7 +81,7 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
     auto* slot = GetNextAvailableConnectSlot();
     if (!slot) return ConnectAttemptResult::NO_FREE_SLOTS;
 
-    slot->Setup(this, Handshaker::Origin::SELF);
+    slot->Setup(this, ConnectionOrigin::SELF);
 
     if (public_key) {
         // cannot specify public key while also having crypto disabled, that's silly
@@ -120,7 +120,7 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
 bool Peer::Bind(SocketProtocol family, uint16_t port) {
     // Remote 0 is a special reserved slot, where out-of-band (i.e. unconnected) communication is performed.
     // We do it this way so PacketQueue requires no extra logic when iterating over the remotes array.
-    m_remotes[0].Setup(this, Handshaker::Origin::INVALID);
+    m_remotes[0].Setup(this, ConnectionOrigin::INVALID);
     m_remotes[0].socket = m_masterSocket;
     m_remotes[0].active = true;
 
@@ -357,7 +357,7 @@ void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
     }
 
     // configure the new remote
-    remote->Setup(this, Handshaker::Origin::REMOTE);
+    remote->Setup(this, ConnectionOrigin::REMOTE);
     SetupRemotePeerCallbacks(remote);
     remote->socket = m_masterSocket; // TODO: FIX ME! Incompatible with future TCP implementation. TCP needs to hand us a new socket from an acceptor!
     remote->addr = addr;
@@ -523,7 +523,7 @@ void Peer::SendHandshakePart(RemotePeer* remote, BinaryStream&& outstream) {
 void Peer::SendHandshakeCompleteNotification(RemotePeer* remote, Packet&& notification) {
     assert(remote);
     const auto result = remote->handshake->GetResult();
-    const bool isRemote = remote->handshake->GetOrigin() == Handshaker::Origin::REMOTE;
+    const bool isRemote = remote->handshake->GetOrigin() == ConnectionOrigin::REMOTE;
     const bool isFailure = result != ConnectResult::OK;
 
     // avoid reporting failed connections if we didn't initiate them; the user doesn't need to know about them

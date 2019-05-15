@@ -8,8 +8,8 @@
 
 #pragma once
 #include "Socket.h"
-#include "RemoteAddress.h"
 #include "WirefoxConfig.h"
+#include "WirefoxConfigRefs.h"
 
 namespace wirefox {
 

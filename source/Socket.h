@@ -8,7 +8,7 @@
 
 #pragma once
 #include "Enumerations.h"
-#include "RemoteAddress.h"
+#include "WirefoxConfig.h"
 
 namespace wirefox {
 
