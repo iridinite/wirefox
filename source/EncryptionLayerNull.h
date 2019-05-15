@@ -36,7 +36,7 @@ namespace wirefox {
             bool GetNeedsToBail() const override { return false; };
 
             BinaryStream GetEphemeralPublicKey() const override { return BinaryStream(0); }
-            bool HandleKeyExchange(Handshaker::Origin, BinaryStream&) override { return true; }
+            bool HandleKeyExchange(ConnectionOrigin, BinaryStream&) override { return true; }
             void ExpectRemoteIdentity(BinaryStream&) override {}
 
             void SetCryptoEstablished() override {}
