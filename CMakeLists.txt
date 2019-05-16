@@ -15,12 +15,17 @@ option(BUILD_TESTS "Include the unit tests in the generated project files" OFF)
 option(WARNINGS_PEDANTIC "Turn the warnings up to 11 (as they should be)" ON)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
+set(WIREFOX_PLATFORM "DESKTOP" CACHE STRING "Target platform for Wirefox library")
+set_property(CACHE WIREFOX_PLATFORM PROPERTY STRINGS DESKTOP NX)
+
+string(TOLOWER ${WIREFOX_PLATFORM} WIREFOX_PLATFORM)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(Wirefox CXX C)
 include(${CMAKE_SOURCE_DIR}/cmake/Macros.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/PrecompiledHeader.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/CompilerSpecific.cmake)
+include(${CMAKE_SOURCE_DIR}/source/platform/${WIREFOX_PLATFORM}/PlatformConfig.cmake)
 
 # ------- main project -------
 
@@ -28,6 +33,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/CompilerSpecific.cmake)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} %(AdditionalDependencies) ")
 
 add_library(Wirefox "")
 
@@ -47,6 +53,7 @@ add_subdirectory(source)
 # import compiler configurations
 target_link_libraries(Wirefox PRIVATE wirefox-compiler-interface)
 target_link_libraries(Wirefox PRIVATE wirefox-platform-interface)
+wirefox_platform_config(Wirefox)
 
 # import native threading library
 find_package(Threads REQUIRED)

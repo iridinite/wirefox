@@ -22,20 +22,14 @@ namespace wirefox {
     namespace detail {
         class CongestionControlWindow;
         class HandshakerThreeWay;
-        class SocketUDP;
         class EncryptionLayerSodium;
         class EncryptionLayerNull;
 
+        class SocketNX;
+        class SocketUDP;
+
         struct RemoteAddressNX;
         struct RemoteAddressASIO;
-
-        /// Represents a remote socket address.
-        using RemoteAddress =
-#ifdef WIREFOX_PLATFORM_NX
-            RemoteAddressNX;
-#else
-            RemoteAddressASIO;
-#endif
     }
 
     /// Represents a unique identifier for a packet. This is used for tracking which packets are associated with which datagrams.
@@ -53,13 +47,27 @@ namespace wirefox {
     /// Represents a unique identifier for a specific peer on the network. Use this to address peers when sending them packets.
     using PeerID = uint64_t;
 
+    namespace detail {
+        /// Represents a remote socket address.
+        using RemoteAddress =
+#ifdef WIREFOX_PLATFORM_NX
+            RemoteAddressNX;
+#else
+            RemoteAddressASIO;
+#endif
+    }
+
     /**
      * \brief Compile-time configuration tweakables.
      */
     namespace cfg {
 
         /// The Socket implementation to use. Changing this lets you easily swap out implementations.
+#ifdef WIREFOX_PLATFORM_NX
+        using DefaultSocket = detail::SocketNX;
+#else
         using DefaultSocket = detail::SocketUDP;
+#endif
 
         /// The Handshaker implementation to use. Changing this lets you easily swap out implementations.
         using DefaultHandshaker = detail::HandshakerThreeWay;

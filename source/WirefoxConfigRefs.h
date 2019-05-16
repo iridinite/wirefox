@@ -22,8 +22,13 @@
  */
 
 // DefaultSocket
+#ifdef WIREFOX_PLATFORM_NX
+#include "SocketNX.h"
+#include "RemoteAddressNX.h"
+#else
 #include "SocketUDP.h"
 #include "RemoteAddressASIO.h"
+#endif
 
 // DefaultHandshaker
 #include "HandshakerThreeWay.h"

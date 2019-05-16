@@ -50,4 +50,13 @@ target_include_directories(Wirefox
   PRIVATE
     ${thisfolder}
 )
+
+# Nintendo Switch bindings
+if (${WIREFOX_PLATFORM} STREQUAL "nx")
+  if (NOT IS_DIRECTORY "${thisfolder}/platform/nx")
+    message(FATAL_ERROR "The Nintendo Switch bindings are missing. Due to NDA restrictions, these are not included in the open source project. Please contact codingcuddlewolf@gmail.com to obtain a copy of the required files, or set WIREFOX_PLATFORM back to DESKTOP.")
+  endif()
+  add_subdirectory(platform/nx)
+else()
   add_subdirectory(platform/desktop)
+endif()

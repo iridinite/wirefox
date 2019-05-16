@@ -52,7 +52,9 @@
 #include <functional>
 #include <sstream>
 
+#ifndef WIREFOX_PLATFORM_NX
 #include <asio.hpp>
+#endif
 
 #if defined(_MSC_VER)
 #pragma warning (pop)
