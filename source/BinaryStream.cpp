@@ -9,6 +9,7 @@
 #include "PCH.h"
 #include "BinaryStream.h"
 #include "Serializable.h"
+#include "WirefoxConfigRefs.h"
 
 namespace {
 
@@ -233,12 +234,12 @@ void BinaryStream::WriteBytes(const void* addr, const size_t len) {
 }
 
 void BinaryStream::WriteInt16(uint16_t val) {
-    val = asio::detail::socket_ops::host_to_network_short(val);
+    val = cfg::DefaultSocket::Htons(val);
     WriteBytes(&val, sizeof val);
 }
 
 void BinaryStream::WriteInt32(uint32_t val) {
-    val = asio::detail::socket_ops::host_to_network_long(val);
+    val = cfg::DefaultSocket::Htonl(val);
     WriteBytes(&val, sizeof val);
 }
 
@@ -329,14 +330,14 @@ uint16_t BinaryStream::ReadUInt16() {
     // read 2 bytes from buffer, and endian swap
     uint16_t ret;
     ReadBytes(reinterpret_cast<uint8_t*>(&ret), sizeof ret); //-V206 : fully intentional behavior
-    return asio::detail::socket_ops::network_to_host_short(ret);
+    return cfg::DefaultSocket::Ntohs(ret);
 }
 
 uint32_t BinaryStream::ReadUInt32() {
     // read 4 bytes from buffer, and endian swap
     uint32_t ret;
     ReadBytes(reinterpret_cast<uint8_t*>(&ret), sizeof ret); //-V206 : fully intentional behavior
-    return asio::detail::socket_ops::network_to_host_long(ret);
+    return cfg::DefaultSocket::Ntohl(ret);
 }
 
 uint64_t BinaryStream::ReadUInt64() {
@@ -428,5 +429,5 @@ bool BinaryStream::IsLittleEndian() {
     // https://stackoverflow.com/a/28592202
     // if htonl changes the given value, then it had to swap to big endian,
     // which means the local machine is little endian
-    return asio::detail::socket_ops::host_to_network_long(1) != 1;
+    return cfg::DefaultSocket::Htonl(1) != 1;
 }

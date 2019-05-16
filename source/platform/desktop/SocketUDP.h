@@ -47,6 +47,11 @@ namespace wirefox {
 
             bool                    IsOpenAndReady() const override;
 
+            static uint16_t         Htons(uint16_t val);
+            static uint16_t         Ntohs(uint16_t val);
+            static uint32_t         Htonl(uint32_t val);
+            static uint32_t         Ntohl(uint32_t val);
+
         private:
             void                    ThreadWorker();
             asio::ip::udp           GetAsioProtocol() const;

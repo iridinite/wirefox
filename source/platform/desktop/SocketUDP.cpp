@@ -186,6 +186,22 @@ bool SocketUDP::IsOpenAndReady() const {
     return m_socket.is_open();
 }
 
+uint16_t SocketUDP::Htons(uint16_t val) {
+    return asio::detail::socket_ops::host_to_network_short(val);
+}
+
+uint16_t SocketUDP::Ntohs(uint16_t val) {
+    return asio::detail::socket_ops::network_to_host_short(val);
+}
+
+uint32_t SocketUDP::Htonl(uint32_t val) {
+    return asio::detail::socket_ops::host_to_network_long(val);
+}
+
+uint32_t SocketUDP::Ntohl(uint32_t val) {
+    return asio::detail::socket_ops::network_to_host_long(val);
+}
+
 void SocketUDP::ThreadWorker() {
     while (!m_socketThreadAbort) {
         if (m_context.stopped())
