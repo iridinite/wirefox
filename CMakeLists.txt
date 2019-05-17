@@ -33,7 +33,6 @@ include(${CMAKE_SOURCE_DIR}/source/platform/${WIREFOX_PLATFORM}/PlatformConfig.c
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} %(AdditionalDependencies) ")
 
 add_library(Wirefox "")
 

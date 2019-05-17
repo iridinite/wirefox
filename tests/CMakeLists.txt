@@ -13,5 +13,6 @@ target_include_directories(${LIBRARY_NAME}
 target_link_libraries(${LIBRARY_NAME} PRIVATE Wirefox)
 
 copy_wirefox_library()
+wirefox_platform_config(Tests)
 
 add_test("WirefoxTests" Tests)
