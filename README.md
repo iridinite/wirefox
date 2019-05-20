@@ -6,14 +6,13 @@ Wirefox is a flexible, easy-to-use and no-nonsense networking library.
 
 - Connection-oriented API
 - Message-oriented delivery
+- Works on Windows, Unix-like systems, and Nintendo Switch
 - Peer-to-peer-style architecture, but also supports client-server model
 - Supports both IPv4 & IPv6 out of the box
 - Supports reliable delivery of messages
 - Supports encryption, with automatic key exchange and forward secrecy
 - Supports custom channels, to sort and sequence packets
 - Supports LAN discovery, to detect game lobbies etc. on the local network
-
-This library is under active development, and might not ready to be used in production. Regardless, I'd love to hear from you if you have any thoughts or concerns!
 
 ## Here's a quick example!
 
@@ -36,7 +35,7 @@ client->Connect("amazing.server.com", port);
 - Custom packet prioritization
 - Remote procedure calls
 - Path MTU discovery
-- Packet fragmentation & reassembly
+- PlayStation 4 support
 - And more?
 
 ## Building from source
@@ -65,6 +64,15 @@ $ cd build
 $ cmake ../
 $ make
 ```
+
+### Console support
+
+In CMake, set the `WIREFOX_PLATFORM` setting to the desired platform. These values are recognized:
+
+- `DESKTOP` refers to Windows or Linux,
+- `NX` refers to Nintendo Switch.
+
+Due to NDA restrictions, some files required to build for Nintendo Switch are not included in this public repo. To obtain them, please get in touch with me at mikamolenkamp@hotmail.com.
 
 ## Documentation
 
