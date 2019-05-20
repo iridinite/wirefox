@@ -9,7 +9,10 @@ ChatServer::ChatServer(unsigned short port)
     m_peer->SetNetworkSimulation(0.1f, 5);
     m_peer->SetEncryptionEnabled(true);
     m_peer->SetEncryptionIdentity(SERVER_KEY_SECRET, SERVER_KEY_PUBLIC);
-    m_peer->Bind(wirefox::SocketProtocol::IPv4, port);
+    if (!m_peer->Bind(wirefox::SocketProtocol::IPv4, port)) {
+        std::cerr << "Server failed to bind to port!" << std::endl;
+        exit(1);
+    }
 
     m_channelChat = m_peer->MakeChannel(wirefox::ChannelMode::ORDERED);
 }
@@ -109,6 +112,9 @@ void ChatServer::HandleChatMessage(ChatUser* user, const std::string& message) {
 
 void ChatServer::Broadcast(const std::string& message) const {
     // TODO: could maybe put an out-of-the-box Broadcast function in wirefox::Peer?
+
+    // console output in server
+    std::cout << message << std::endl;
 
     for (const auto& user : m_users)
         SendToSpecific(user.id, message);
