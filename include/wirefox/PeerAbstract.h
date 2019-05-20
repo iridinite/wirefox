@@ -88,7 +88,7 @@ namespace wirefox {
         /**
          * \brief Stops all services of this peer.
          * 
-         * \todo Implementation details TBD.
+         * 
          */
         virtual void                    Stop(Timespan linger = Time::FromMilliseconds(0)) = 0;
 

@@ -84,7 +84,9 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
     slot->Setup(this, ConnectionOrigin::SELF);
 
     if (public_key) {
-        // cannot specify public key while also having crypto disabled, that's silly
+        // Cannot specify public key while also having crypto disabled, that's dangerous because
+        // our only other option here is to silently discard the key, which would lead to the user thinking
+        // they're having an encrypted conversation when they really aren't. Therefore, treat as error.
         if (!GetEncryptionEnabled()) {
             slot->Reset();
             return ConnectAttemptResult::INVALID_PARAMETER;
@@ -97,9 +99,9 @@ ConnectAttemptResult Peer::Connect(const std::string& host, uint16_t port, const
 
     auto ret = m_masterSocket->Connect(host, port, [this, slot](bool error, RemoteAddress addr, std::shared_ptr<Socket> socket, std::string) {
         if (error) {
-            // TODO: post error notification
-            std::cout << "Peer::Connect: failed, should post notification" << std::endl;
-            slot->Reset();
+            // internal error, probably?
+            assert(false && "internal error in Socket::Connect");
+            DisconnectImmediate(slot);
             return;
         }
 
@@ -164,8 +166,27 @@ void Peer::DisconnectImmediate(RemotePeer* remote) {
     remote->Reset();
 }
 
-void Peer::Stop(Timespan) {
-    // TODO
+void Peer::Stop(Timespan linger) {
+    for (size_t i = 1 /* skip oob socket */; i < m_remotesMax; i++) {
+        auto& slot = m_remotes[i];
+        if (slot.IsConnected() && linger > 0)
+            // if connection was established, perform graceful disconnect
+            Disconnect(slot.id, linger);
+        else
+            // otherwise (or if graceful is disabled), at least prevent new outgoing messages
+            slot.disconnect = Time::Now() + linger;
+    }
+
+    // block the main thread for the specified linger duration, so that the network
+    // threads have the time they need to perform all graceful disconnections
+    if (linger > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(Time::ToMilliseconds(linger)));
+
+    // finally, actually kill all connections and clean up the entire remotes array
+    for (size_t i = 1 /* skip oob socket */; i < m_remotesMax; i++)
+        m_remotes[i].Reset();
+    // and stop network activity
+    m_masterSocket->Unbind();
 }
 
 PacketID Peer::Send(const Packet& packet, PeerID recipient, PacketOptions options, PacketPriority priority, const Channel& channel) {
