@@ -331,7 +331,7 @@ namespace wirefox {
     template<typename T>
     T BinaryStream::Read() {
         T ret;
-        ReadBytes(&ret, sizeof(T));
+        ReadBytes(reinterpret_cast<uint8_t*>(&ret), sizeof(T));
         return ret;
     }
 
