@@ -20,17 +20,17 @@ namespace wirefox {
         BYTES_RECEIVED,
         /// Number of bytes sent but not yet accounted for (i.e. still in transit).
         BYTES_IN_FLIGHT,
-        /// Number of Packets the user has queued using Send().
+        /// Total number of Packets the user has queued using Send().
         PACKETS_QUEUED,
         /// Number of Packets that are queued but not yet delivered.
         PACKETS_IN_QUEUE,
         /// Total number of Packets that have been sent out, including retransmissions.
         PACKETS_SENT,
-        /// Total number of full Packets received from the remote endpoint.
+        /// Total number of user Packets received from the remote endpoint, excluding duplicates and transmission errors.
         PACKETS_RECEIVED,
         /// Total number of times a reliable outgoing Packet was deemed lost and was requeued.
         PACKETS_LOST,
-        /// Congestion window size, in bytes. This is essentially the estimated bandwidth of this connection.
+        /// Congestion window size, in bytes. This acts as an upper limit for BYTES_IN_FLIGHT.
         CWND,
     };
 
@@ -72,7 +72,15 @@ namespace wirefox {
         void Set(PeerStatID id, StatValue value);
 
     private:
-        std::unordered_map<PeerStatID, StatValue> m_stats;
+        // because GCC and Clang apparently can't deal with strong enums as unordered_map keys; filed under *shrug*
+        struct StrongEnumHash {
+            template<typename T>
+            size_t operator()(T val) const {
+                return static_cast<size_t>(val);
+            }
+        };
+
+        std::unordered_map<PeerStatID, StatValue, StrongEnumHash> m_stats;
     };
 
 }
