@@ -137,4 +137,27 @@ namespace Iridinite.Wirefox {
         USER_PACKET = 14
     }
 
+    /// Represents a key for looking up or changing peer statistics.
+    [PublicAPI]
+    public enum PeerStatID {
+        /// Total number of bytes sent out. This includes system overhead such as headers and acks.
+        BYTES_SENT,
+        /// Total number of bytes received. This includes system overhead such as headers and acks.
+        BYTES_RECEIVED,
+        /// Number of bytes sent but not yet accounted for (i.e. still in transit).
+        BYTES_IN_FLIGHT,
+        /// Total number of Packets the user has queued using Send().
+        PACKETS_QUEUED,
+        /// Number of Packets that are queued but not yet delivered.
+        PACKETS_IN_QUEUE,
+        /// Total number of Packets that have been sent out, including retransmissions.
+        PACKETS_SENT,
+        /// Total number of user Packets received from the remote endpoint, excluding duplicates and transmission errors.
+        PACKETS_RECEIVED,
+        /// Total number of times a reliable outgoing Packet was deemed lost and was requeued.
+        PACKETS_LOST,
+        /// Congestion window size, in bytes. This acts as an upper limit for BYTES_IN_FLIGHT.
+        CWND,
+    }
+
 }

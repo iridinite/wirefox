@@ -160,6 +160,13 @@ void wirefox_peer_ping_local_network(HWirefoxPeer* handle, uint16_t port) {
     HandleToPeer(handle)->PingLocalNetwork(port);
 }
 
+size_t wirefox_peer_get_stat(HWirefoxPeer* handle, TPeerID who, EPeerStatID stat) {
+    const auto* stats = HandleToPeer(handle)->GetStats(who);
+    if (!stats) return 0;
+
+    return stats->Get(static_cast<PeerStatID>(stat));
+}
+
 size_t wirefox_peer_get_crypto_key_length(HWirefoxPeer* handle) {
     return HandleToPeer(handle)->GetEncryptionKeyLength();
 }

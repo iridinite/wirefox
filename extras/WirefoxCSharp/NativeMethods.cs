@@ -78,6 +78,10 @@ namespace Iridinite.Wirefox {
         public static extern bool wirefox_peer_get_ping_available(IntPtr handle, TPeerID who);
 
         [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
+        [return: MarshalAs(UnmanagedType.SysUInt)]
+        public static extern UIntPtr wirefox_peer_get_stat(IntPtr handle, TPeerID who, PeerStatID stat);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]
         public static extern void wirefox_peer_set_network_sim(IntPtr handle, float packetLoss, uint additionalPing);
 
         [DllImport(LIBRARY_NAME, CallingConvention = LIBRARY_CALL)]

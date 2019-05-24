@@ -128,6 +128,10 @@ namespace Iridinite.Wirefox {
             return NativeMethods.wirefox_peer_get_ping_available(m_handle, who);
         }
 
+        public ulong GetStat(PeerID who, PeerStatID stat) {
+            return (ulong) NativeMethods.wirefox_peer_get_stat(m_handle, who, stat);
+        }
+
         public void SetNetworkSimulator(float packetLoss, uint additionalPing) {
             NativeMethods.wirefox_peer_set_network_sim(m_handle, packetLoss, additionalPing);
         }

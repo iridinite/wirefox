@@ -17,6 +17,8 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <unordered_map>
+#include <type_traits>
 #include <atomic>
 #include <thread>
 #include <mutex>
@@ -27,6 +29,7 @@
 
 #include <wirefox/Enumerations.h>
 #include <wirefox/PeerAbstract.h>
+#include <wirefox/PeerStats.h>
 #include <wirefox/BinaryStream.h>
 #include <wirefox/Packet.h>
 #include <wirefox/WirefoxTime.h>
