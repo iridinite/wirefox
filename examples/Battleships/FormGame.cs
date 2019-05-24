@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -295,6 +296,34 @@ namespace Iridinite.Wirefox.Battleships {
             }
         }
 
+        private void UpdateStats() {
+            var sb = new StringBuilder();
+            sb.AppendFormat("Byte Totals: {0:##,##0} sent / {1:##,##0} recv",
+                Client.GetStat(PeerStatID.BYTES_SENT),
+                Client.GetStat(PeerStatID.BYTES_RECEIVED));
+            sb.AppendLine();
+            sb.AppendFormat("Bytes in Flight: {0:##,##0}",
+                Client.GetStat(PeerStatID.BYTES_IN_FLIGHT));
+            sb.AppendLine();
+            sb.AppendFormat("Packets queued: {0:##,##0} ({1:##,##0} waiting)",
+                Client.GetStat(PeerStatID.PACKETS_QUEUED),
+                Client.GetStat(PeerStatID.PACKETS_IN_QUEUE));
+            sb.AppendLine();
+            sb.AppendFormat("Packets: {0:##,##0} sent / {1:##,##0} recv / {2:##,##0} lost",
+                Client.GetStat(PeerStatID.PACKETS_SENT),
+                Client.GetStat(PeerStatID.PACKETS_RECEIVED),
+                Client.GetStat(PeerStatID.PACKETS_LOST));
+            sb.AppendLine();
+            sb.AppendFormat("Datagrams: {0:##,##0} sent / {1:##,##0} recv",
+                Client.GetStat(PeerStatID.PACKETS_SENT),
+                Client.GetStat(PeerStatID.PACKETS_RECEIVED));
+            sb.AppendLine();
+            sb.AppendFormat("CWND: {0:##,##0}",
+                Client.GetStat(PeerStatID.CWND));
+
+            lblStats.Text = sb.ToString();
+        }
+
         private void OnMessageReceived(Packet recv) {
             // need to be on UI thread
             if (this.InvokeRequired) {
@@ -304,6 +333,9 @@ namespace Iridinite.Wirefox.Battleships {
 
             if (m_packetHandlers.ContainsKey(recv.GetCommand()))
                 m_packetHandlers[recv.GetCommand()].Invoke(recv);
+
+            // visualize connection debug info
+            UpdateStats();
         }
 
         private void OnChat(Packet recv) {
@@ -426,7 +458,8 @@ namespace Iridinite.Wirefox.Battleships {
             cmdChat.Enabled = false;
             cmdDisconnect.Text = "Exit";
             cmdDisconnect.Enabled = true;
-            lblGameStatus.Text = "Lost connection with the server.";
+            if (m_Phase != GamePhase.Ended) // leave "opponent disconnect text" if present
+                lblGameStatus.Text = "Lost connection with the server.";
             m_ExpectDisconnect = true;
             SetPhase(GamePhase.Ended);
         }
@@ -436,7 +469,6 @@ namespace Iridinite.Wirefox.Battleships {
             cmdDisconnect.Text = "Exit";
             cmdDisconnect.Enabled = true;
             lblGameStatus.Text = "Your opponent disconnected.";
-            m_ExpectDisconnect = true;
             SetPhase(GamePhase.Ended);
         }
 
@@ -469,6 +501,12 @@ namespace Iridinite.Wirefox.Battleships {
         }
 
         #endregion
+
+        private void tmrStats_Tick(object sender, EventArgs e) {
+            if (!Client.IsActive()) return;
+
+            UpdateStats();
+        }
 
     }
 

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.picMainBoard = new System.Windows.Forms.PictureBox();
             this.picTrackingBoard = new System.Windows.Forms.PictureBox();
             this.lblGameStatus = new System.Windows.Forms.Label();
@@ -36,6 +37,8 @@
             this.cmdChat = new System.Windows.Forms.Button();
             this.lblTrackingGridPurpose = new System.Windows.Forms.Label();
             this.cmdDisconnect = new System.Windows.Forms.Button();
+            this.lblStats = new System.Windows.Forms.Label();
+            this.tmrStats = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.picMainBoard)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picTrackingBoard)).BeginInit();
             this.SuspendLayout();
@@ -118,11 +121,28 @@
             this.cmdDisconnect.UseVisualStyleBackColor = true;
             this.cmdDisconnect.Click += new System.EventHandler(this.cmdDisconnect_Click);
             // 
+            // lblStats
+            // 
+            this.lblStats.Enabled = false;
+            this.lblStats.Location = new System.Drawing.Point(608, 304);
+            this.lblStats.Name = "lblStats";
+            this.lblStats.Size = new System.Drawing.Size(216, 144);
+            this.lblStats.TabIndex = 8;
+            this.lblStats.Text = "Statistics";
+            this.lblStats.TextAlign = System.Drawing.ContentAlignment.BottomRight;
+            // 
+            // tmrStats
+            // 
+            this.tmrStats.Enabled = true;
+            this.tmrStats.Interval = 200;
+            this.tmrStats.Tick += new System.EventHandler(this.tmrStats_Tick);
+            // 
             // FormGame
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(841, 465);
+            this.Controls.Add(this.lblStats);
             this.Controls.Add(this.cmdDisconnect);
             this.Controls.Add(this.lblTrackingGridPurpose);
             this.Controls.Add(this.cmdChat);
@@ -155,5 +175,7 @@
         private System.Windows.Forms.Button cmdChat;
         private System.Windows.Forms.Label lblTrackingGridPurpose;
         private System.Windows.Forms.Button cmdDisconnect;
+        private System.Windows.Forms.Label lblStats;
+        private System.Windows.Forms.Timer tmrStats;
     }
 }

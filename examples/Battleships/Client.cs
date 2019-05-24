@@ -97,6 +97,10 @@ namespace Iridinite.Wirefox.Battleships {
             peer.Disconnect(serverID);
         }
 
+        public static ulong GetStat(PeerStatID stat) {
+            return peer.GetStat(serverID, stat);
+        }
+
         public static void SendPlaceShip(Ship newShip) {
             using (var ms = new MemoryStream()) {
                 using (var writer = new BinaryWriter(ms, Encoding.UTF8)) {
