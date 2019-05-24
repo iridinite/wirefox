@@ -78,7 +78,7 @@ namespace wirefox {
          * protocol family specified in \p family for any incoming or outgoing connections.
          * 
          * \returns True on success; false if the specified port is already in use, or if you have insufficient
-         * system privileges to bind, or if the system is otherwise being difficult.
+         * system privileges to bind, or if the network interface is otherwise unavailable.
          * 
          * \param[in]   family  Indicates the socket family to use for this Peer (either IPv4 or IPv6).
          * \param[in]   port    Specifies the local port to bind to. Specify 0 to have the system assign a random port.

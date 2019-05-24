@@ -330,7 +330,6 @@ Channel Peer::MakeChannel(ChannelMode mode) {
 }
 
 ChannelMode Peer::GetChannelModeByIndex(ChannelIndex index) const {
-    // Intentionally throws if index is out of bounds. So don't do that.
     return m_channels.at(index);
 }
 

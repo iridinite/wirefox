@@ -169,7 +169,7 @@ namespace wirefox {
 
 
 
-    /// \cond WIREFOX_INTERNAL
+    /// \cond NO_DOC
 
     /// Conditionally enables bitmasking operators on strongly typed enums.
     template<typename Enum>
