@@ -53,6 +53,7 @@ namespace {
         if (!outgoing) return;
 
         outgoing->sendNext = Time::Now() + remote.congestion->GetRetransmissionRTO(outgoing->sendCount);
+        remote.stats.Add(PeerStatID::PACKETS_LOST, 1);
         sendQueue.push_back(outgoing);
     }
 
@@ -154,6 +155,7 @@ PacketQueue::OutgoingDatagram* DatagramBuilder::MakeDatagram(RemotePeer& remote,
             remote.RemovePacketFromOutbox(outgoing->id);
     }
 
+    remote.stats.Add(PeerStatID::PACKETS_SENT, sendQueue.size());
     remote.sentbox.push_back(std::move(datagram));
     return &remote.sentbox.back();
 }

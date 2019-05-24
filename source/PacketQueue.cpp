@@ -115,6 +115,8 @@ PacketID PacketQueue::EnqueueOutgoing(const Packet& packet, RemotePeer* remote, 
             remote->receipt->RegisterSplitPacket(containerPacketID, std::move(segmentIDs));
     }
 
+    remote->stats.Add(PeerStatID::PACKETS_QUEUED, 1);
+
     return containerPacketID;
 }
 
@@ -181,7 +183,7 @@ void PacketQueue::ThreadWorker() {
                 remote.handshake->Update();
             // various periodic updates
             if (remote.congestion)
-                remote.congestion->Update();
+                remote.congestion->Update(remote.stats);
             if (remote.receipt)
                 remote.receipt->Update();
 
@@ -217,6 +219,9 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     using namespace std::placeholders;
     if (remote.socket->IsWritePending()) return;
 
+    // update queue size in debug stats tracker
+    remote.stats.Set(PeerStatID::PACKETS_IN_QUEUE, remote.outbox.size());
+
     OutgoingDatagram* datagram = remote.GetNextDatagram(m_peer);
     if (!datagram) return;
 
@@ -241,6 +246,8 @@ void PacketQueue::DoWriteCycle(RemotePeer& remote) {
     }
 
     // dispatch an async write op for this remote
+    remote.stats.Add(PeerStatID::BYTES_SENT, datagram->blob.GetLength());
+    remote.stats.Add(PeerStatID::DATAGRAMS_SENT, 1);
     remote.congestion->NotifySendingBytes(datagram->id, datagram->blob.GetLength());
     remote.socket->BeginWrite(datagram->addr, datagram->blob.GetBuffer(), datagram->blob.GetLength(),
         std::bind(&PacketQueue::OnWriteFinished, shared_from_this(), &remote, datagram->id, _1, _2));
@@ -272,6 +279,8 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
     }
 
     BinaryStream inbuffer(buffer, transferred, BinaryStream::WrapMode::READONLY);
+    remote->stats.Add(PeerStatID::DATAGRAMS_RECEIVED, 1);
+    remote->stats.Add(PeerStatID::BYTES_RECEIVED, transferred);
 
     // if we know the remote, then the message may be encrypted
     if (remote->crypto && remote->crypto->GetCryptoEstablished()) {
@@ -348,6 +357,8 @@ void PacketQueue::OnReadFinished(bool error, const RemoteAddress& sender, const 
 
         // not a duplicate receive?
         if (remote->congestion->NotifyReceivedPacket(packetHeader.id) == CongestionControl::RecvState::NEW) {
+            remote->stats.Add(PeerStatID::PACKETS_RECEIVED, 1);
+
             // split packet?
             if (packetHeader.flag_segment || packetHeader.offset > 0) {
                 // this is a split packet, so let's reassemble it

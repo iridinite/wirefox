@@ -30,6 +30,8 @@ namespace wirefox {
             CongestionControlWindow& operator=(const CongestionControlWindow&) = delete;
             CongestionControlWindow& operator=(CongestionControlWindow&&) noexcept = delete;
 
+            void            Update(PeerStats& stats) override;
+
             size_t          GetTransmissionBudget() const override;
             size_t          GetRetransmissionBudget() const override;
             Timespan        GetRetransmissionRTO(unsigned retries) const override;

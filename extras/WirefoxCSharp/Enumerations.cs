@@ -148,16 +148,20 @@ namespace Iridinite.Wirefox {
         BYTES_IN_FLIGHT,
         /// Total number of Packets the user has queued using Send().
         PACKETS_QUEUED,
-        /// Number of Packets that are queued but not yet delivered.
+        /// Number of Packets that are queued by the user but not yet delivered.
         PACKETS_IN_QUEUE,
-        /// Total number of Packets that have been sent out, including retransmissions.
+        /// Total number of user packets that have been attached to datagrams, including retransmissions and individual segments of split packets.
         PACKETS_SENT,
-        /// Total number of user Packets received from the remote endpoint, excluding duplicates and transmission errors.
+        /// Total number of user packets received from the remote endpoint, including retransmissions and individual segments of split packets.
         PACKETS_RECEIVED,
-        /// Total number of times a reliable outgoing Packet was deemed lost and was requeued.
+        /// Total number of times a packet was deemed lost because its parent datagram was not acked in time.
         PACKETS_LOST,
-        /// Congestion window size, in bytes. This acts as an upper limit for BYTES_IN_FLIGHT.
-        CWND,
+        /// [Meant for debugging.] Total number of datagrams that have been sent out, including retransmissions and system messages.
+        DATAGRAMS_SENT,
+        /// [Meant for debugging.] Total number of datagrams received from the remote endpoint, including retransmissions and system messages.
+        DATAGRAMS_RECEIVED,
+        /// [Meant for debugging.] Congestion window size, in bytes. This acts as an upper limit for BYTES_IN_FLIGHT.
+        CWND
     }
 
 }

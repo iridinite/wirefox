@@ -31,7 +31,7 @@ CongestionControl::CongestionControl()
     , m_rttMax(0)
     , m_rttAvg(0) {}
 
-void CongestionControl::Update() {
+void CongestionControl::Update(PeerStats& stats) {
     // Many calls in rapid succession aren't necessary; this might save us some time wasted doing
     // list traversals if we already cleaned them up 1 ms ago
     if (!Time::Elapsed(m_nextUpdate)) return;
@@ -81,6 +81,8 @@ void CongestionControl::Update() {
         else
             ++itr_packet;
     }
+
+    stats.Set(PeerStatID::BYTES_IN_FLIGHT, m_bytesInFlight);
 }
 
 PacketID CongestionControl::GetNextPacketID() {

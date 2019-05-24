@@ -15,6 +15,12 @@ CongestionControlWindow::CongestionControlWindow()
     : m_window(cfg::MTU)
     , m_threshold(cfg::CONGESTION_WINDOW_SSTHRESH) {}
 
+void CongestionControlWindow::Update(PeerStats& stats) {
+    // just here to update the CWND stat, mostly for debugging purposes
+    CongestionControl::Update(stats);
+    stats.Set(PeerStatID::CWND, m_window);
+}
+
 size_t CongestionControlWindow::GetTransmissionBudget() const {
     return std::min(
         m_bytesInFlight >= m_window ? 0 : m_window - m_bytesInFlight,

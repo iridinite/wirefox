@@ -8,6 +8,7 @@
 
 #pragma once
 #include "WirefoxTime.h"
+#include "PeerStats.h"
 
 namespace wirefox {
     
@@ -43,7 +44,7 @@ namespace wirefox {
             CongestionControl& operator=(CongestionControl&&) noexcept = delete;
 
             /// Runs periodic updates, particularly cleaning up old history.
-            virtual void        Update();
+            virtual void        Update(PeerStats& stats);
 
             /// Returns, and increments, the next outgoing PacketID.
             PacketID            GetNextPacketID();
