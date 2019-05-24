@@ -15,6 +15,7 @@
 #include "EncryptionLayer.h"
 #include "ReassemblyBuffer.h"
 #include "WirefoxConfigRefs.h"
+#include "PeerStats.h"
 
 namespace wirefox {
 
@@ -60,6 +61,9 @@ namespace wirefox {
 
             /// A handle to an object that services requests for delivery receipts.
             ReassemblyBuffer assembly;
+
+            /// A collection of statistics and debug info for this connection.
+            PeerStats stats;
 
             /// The unique ID number of this remote endpoint. May be zero if handshake incomplete.
             PeerID id;

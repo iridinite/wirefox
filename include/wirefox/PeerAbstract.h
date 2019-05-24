@@ -15,6 +15,7 @@ namespace wirefox {
 
     class BinaryStream;
     class Packet;
+    class PeerStats;
 
     /**
      * \brief Represents a network peer.
@@ -296,6 +297,18 @@ namespace wirefox {
          * \param[in]   who         The PeerID for whom to check ping.
          */
         virtual unsigned                GetPing(PeerID who) const = 0;
+
+        /**
+         * \brief Returns the statistics tracker of a remote peer.
+         * 
+         * Use this function to obtain connection stats such as numbers of packets sent and received.
+         * 
+         * \note If the peer represented by PeerID \p who disconnects, the returned pointer is invalidated.
+         * 
+         * \param[in]   who         The PeerID for whose connection to get statistics.
+         * \returns     A read-only pointer to a PeerStats object, or nullptr if \p who is invalid.
+         */
+        virtual const PeerStats*        GetStats(PeerID who) const = 0;
 
         /**
          * \brief Returns the maximum number of peers this IPeer can be connected to at once.

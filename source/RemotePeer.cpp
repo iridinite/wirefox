@@ -10,7 +10,6 @@
 #include "RemotePeer.h"
 #include "WirefoxConfigRefs.h"
 #include "DatagramBuilder.h"
-#include "EncryptionAuthenticator.h"
 #include "Peer.h"
 
 using namespace detail;
@@ -144,6 +143,7 @@ void RemotePeer::Reset() {
     crypto = nullptr;
     receipt = nullptr;
     assembly = ReassemblyBuffer(this);
+    stats = PeerStats();
     outbox.clear();
     sentbox.clear();
     channels.clear();

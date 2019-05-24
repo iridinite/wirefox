@@ -35,6 +35,7 @@ target_sources(Wirefox
     ${thisfolder}/PacketQueue.h
     ${thisfolder}/Peer.cpp
     ${thisfolder}/Peer.h
+    ${thisfolder}/PeerStats.cpp
     ${thisfolder}/ReassemblyBuffer.cpp
     ${thisfolder}/ReassemblyBuffer.h
     ${thisfolder}/ReceiptTracker.cpp

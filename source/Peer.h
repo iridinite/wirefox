@@ -98,6 +98,7 @@ namespace wirefox {
             void                        GetAllConnectedPeers(std::vector<PeerID>& output) const override;
             bool                        GetPingAvailable(PeerID who) const override;
             unsigned                    GetPing(PeerID who) const override;
+            const PeerStats*            GetStats(PeerID who) const override;
 
             /**
              * \brief Retrieves a RemotePeer using its slot index.

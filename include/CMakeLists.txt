@@ -12,6 +12,7 @@ target_sources(Wirefox
     ${thisfolder}/wirefox/Factory.h
     ${thisfolder}/wirefox/Packet.h
     ${thisfolder}/wirefox/PeerAbstract.h
+    ${thisfolder}/wirefox/PeerStats.h
     ${thisfolder}/wirefox/Serializable.h
 )
 target_include_directories(Wirefox

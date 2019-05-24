@@ -355,6 +355,13 @@ unsigned Peer::GetPing(PeerID who) const {
     return remote->congestion->GetAverageRTT();
 }
 
+const PeerStats* Peer::GetStats(PeerID who) const {
+    auto* remote = GetRemoteByID(who);
+    if (!remote) return nullptr;
+
+    return &remote->stats;
+}
+
 void SendRejectionReply(Peer* peer, const RemoteAddress& addr, ConnectResult reason) {
     // build handshake error message
     BinaryStream reply;
