@@ -1,3 +1,15 @@
+/*
+ * Wirefox Networking API
+ * (C) Mika Molenkamp, 2019.
+ *
+ * Licensed under the BSD 3-Clause License, see the LICENSE file in the project
+ * root folder for more information.
+ */
+
+// This file is a very basic usage example of the Wirefox library. It is extensively commented throughout
+// to help you get acquainted with the API. More details, and some tutorials, are available in the documentation.
+
+
 // This single header wraps the entire public API along with all standard dependencies.
 // You'll likely want to put this inside a precompiled header or similar tech.
 #include <Wirefox.h>
@@ -12,7 +24,7 @@ constexpr int CLIENT_PORT = 0;
 int main(int, const char**) {
     // -------- SETUP --------
     // Start up a peer that will act as a listen server
-    auto server = IPeer::Factory::Create(10);
+    auto server = IPeer::Factory::Create();
     // Bind the peer to a port. This is required for all peers (even clients), otherwise they can't receive data.
     // If Bind() returns false, the port is in use, or the OS is denying you access for some reason.
     if (!server->Bind(SocketProtocol::IPv4, SERVER_PORT)) {
@@ -33,26 +45,28 @@ int main(int, const char**) {
 
 
     // -------- CONNECTING --------
-    // begin connecting the client to the listen server
+    // Begin connecting the client to the listen server.
+    // Important note: Even if Connect() returns a result of 'ConnectAttemptResult::OK', that does not mean
+    //  you are actually connected, it just means that Wirefox will now begin connecting asynchronously.
     auto connectRet = client->Connect("localhost", SERVER_PORT);
     if (connectRet != ConnectAttemptResult::OK) {
-        // something went wrong; we could not send a connection request to the server
+        // Something went wrong; we could not send a connection request to the server.
         std::cout << "Client failed to begin connect: " << int(connectRet) << std::endl;
         return EXIT_FAILURE;
     }
 
 
     while (true) {
-        std::unique_ptr<Packet> recv;
         bool exit = false;
 
         // Refer to the documentation pages for more details on how Send() and Receive() work.
 
         // --------- SERVER RECEIVE ---------
-        recv = server->Receive();
-        if (recv) {
+        while (auto recv = server->Receive()) {
             // client successfully connected?
             if (recv->GetCommand() == PacketCommand::NOTIFY_CONNECTION_INCOMING) {
+                // You can get the remote PeerID using Packet::GetSender(). This number won't change during a connection session.
+                // In most practical applications, be sure to save this PeerID somewhere, as you need it to send packets.
                 PeerID clientID = recv->GetSender();
                 std::cout << "---> Hey, a connection is incoming! Client ID: " << clientID << std::endl;
 
@@ -70,14 +84,15 @@ int main(int, const char**) {
         }
 
         // --------- CLIENT RECEIVE ---------
-        recv = client->Receive();
-        if (recv) {
-            // GetStream() is a convenience function that gives you a lightweight readonly wrapper stream around the packet payload.
+        while (auto recv = server->Receive()) {
+            // GetStream() is a convenience function that gives you a lightweight readonly BinaryStream around the packet payload.
+            // It doesn't make a copy of the data buffer, saving you some memory and time.
             BinaryStream instream = recv->GetStream();
 
             switch (recv->GetCommand()) {
             case PacketCommand::NOTIFY_CONNECT_SUCCESS: {
-                // Wirefox informs us that our Connect() succeeded
+                // Wirefox informs us that our Connect() succeeded. In most practical applications, be sure to save the remote PeerID
+                // somewhere (get it with recv->GetSender()), as you need it to send packets. For this demo, however, we won't need it.
                 std::cout << "---> Hey, connection was successful!" << std::endl;
                 break;
             }
@@ -107,6 +122,9 @@ int main(int, const char**) {
     }
 
     // --------- SHUTDOWN ---------
+    // The Stop() function ends all connections of a Peer, and unbinds it. If you wish to later reuse the same Peer, you
+    // need to call Bind() again. Note that it's not strictly necessary to call Stop(), as the destructor has the same
+    // effect, but it's good form.
     client->Stop();
     server->Stop();
 
