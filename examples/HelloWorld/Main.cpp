@@ -84,7 +84,7 @@ int main(int, const char**) {
         }
 
         // --------- CLIENT RECEIVE ---------
-        while (auto recv = server->Receive()) {
+        while (auto recv = client->Receive()) {
             // GetStream() is a convenience function that gives you a lightweight readonly BinaryStream around the packet payload.
             // It doesn't make a copy of the data buffer, saving you some memory and time.
             BinaryStream instream = recv->GetStream();
