@@ -47,16 +47,6 @@ namespace wirefox {
     /// Represents a unique identifier for a specific peer on the network. Use this to address peers when sending them packets.
     using PeerID = uint64_t;
 
-    namespace detail {
-        /// Represents a remote socket address.
-        using RemoteAddress =
-#ifdef WIREFOX_PLATFORM_NX
-            RemoteAddressNX;
-#else
-            RemoteAddressASIO;
-#endif
-    }
-
     /**
      * \brief Compile-time configuration tweakables.
      */
@@ -213,6 +203,25 @@ namespace wirefox {
          */
         #define WIREFOX_LOCK_GUARD(__mtx_name)      ::std::lock_guard<decltype(__mtx_name)> WIREFOX_STRINGIFY(__guard_line, __LINE__)(__mtx_name)
 
+    }
+
+    /**
+     * \brief A callback function that can receive an async RPC signal.
+     * 
+     * \param[in]   peer        Reference to the IPeer where this RPC was registered.
+     * \param[in]   sender      The PeerID of the remote peer who signaled this RPC.
+     * \param[in]   instream    Any payload data the sender optionally included.
+     */
+    using RpcCallbackAsync_t = std::function<void(class IPeer& peer, PeerID sender, class BinaryStream& instream)>;
+
+    namespace detail {
+        /// Represents a remote socket address.
+        using RemoteAddress =
+#ifdef WIREFOX_PLATFORM_NX
+            RemoteAddressNX;
+#else
+            RemoteAddressASIO;
+#endif
     }
 
 }

@@ -42,10 +42,12 @@ target_sources(Wirefox
     ${thisfolder}/ReceiptTracker.h
     ${thisfolder}/RemotePeer.cpp
     ${thisfolder}/RemotePeer.h
+    ${thisfolder}/RpcController.cpp
+    ${thisfolder}/RpcController.h
     ${thisfolder}/Socket.h
-    ${thisfolder}/WirefoxTime.cpp
     ${thisfolder}/WirefoxCBindings.cpp
     ${thisfolder}/WirefoxConfigRefs.h
+    ${thisfolder}/WirefoxTime.cpp
 )
 target_include_directories(Wirefox
   PRIVATE

@@ -416,6 +416,24 @@ void Peer::OnSystemPacket(RemotePeer& remote, std::unique_ptr<Packet> packet) {
         remote.Reset();
         break;
     }
+    case PacketCommand::RPC_SIGNAL: {
+        // get the RPC identifier and its payload back out of the packet
+        auto instream = packet->GetStream();
+        auto ident = instream.ReadString();
+
+        auto paramslen = instream.Read7BitEncodedInt();
+        BinaryStream params(paramslen);
+        if (paramslen > 0) {
+            // TODO: this is same paradigm used in EncryptionLayerSodium, maybe replace with dedicated function?
+            params.WriteZeroes(paramslen);
+            instream.ReadBytes(params.GetWritableBuffer(), paramslen);
+        }
+
+        // invoke the RPC
+        m_rpc.Signal(ident, *this, packet->GetSender(), params);
+
+        break;
+    }
     default:
         assert(false && "unexpected system packet received");
         break;
@@ -636,6 +654,26 @@ void Peer::SetNetworkSimulation(float packetLoss, unsigned additionalPing) {
     (void)packetLoss;
     (void)additionalPing;
 #endif
+}
+
+void Peer::RpcRegisterSlot(const std::string& identifier, RpcCallbackAsync_t handler) {
+    m_rpc.Slot(identifier, handler);
+}
+
+void Peer::RpcUnregisterSlot(const std::string& identifier) {
+    m_rpc.RemoveSlot(identifier);
+}
+
+void Peer::RpcSignal(const std::string& identifier, PeerID recipient, const BinaryStream& params) {
+    // merge identifier and params into a buffer
+    BinaryStream data(params.GetLength() + identifier.length() + 2 * sizeof(size_t));
+    data.WriteString(identifier);
+    data.Write7BitEncodedInt(static_cast<int>(params.GetLength()));
+    data.WriteBytes(params);
+
+    // enqueue notification to remote peer
+    Packet rpc(PacketCommand::RPC_SIGNAL, std::move(data));
+    Send(rpc, recipient, PacketOptions::RELIABLE, PacketPriority::MEDIUM, Channel());
 }
 
 #if WIREFOX_ENABLE_NETWORK_SIM

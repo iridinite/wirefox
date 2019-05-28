@@ -128,6 +128,8 @@ namespace wirefox {
         DISCONNECT_ACK,
         /// \internal Incoming system ad.
         ADVERTISEMENT,
+        /// \internal Async RPC invocation.
+        RPC_SIGNAL,
 
         // ----- USER - These may be returned through Peer::Receive() ----- //
 

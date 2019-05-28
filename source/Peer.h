@@ -10,6 +10,7 @@
 #include "PeerAbstract.h"
 #include "PacketQueue.h"
 #include "EncryptionLayer.h"
+#include "RpcController.h"
 
 namespace wirefox {
 
@@ -132,6 +133,13 @@ namespace wirefox {
 
             void                        SetNetworkSimulation(float packetLoss, unsigned additionalPing) override;
 
+
+            void                        RpcRegisterSlot(const std::string& identifier, RpcCallbackAsync_t handler) override;
+
+            void                        RpcUnregisterSlot(const std::string& identifier) override;
+
+            void                        RpcSignal(const std::string& identifier, PeerID recipient, const BinaryStream& params) override;
+
 #if WIREFOX_ENABLE_NETWORK_SIM
             /**
              * \brief Rolls a random chance indicating whether or not a packet should be artifically dropped.
@@ -205,6 +213,7 @@ namespace wirefox {
             size_t m_remotesMax;
             size_t m_remotesIncoming;
             BinaryStream m_advertisement;
+            RpcController m_rpc;
 
 #if WIREFOX_ENABLE_NETWORK_SIM
             float                       m_simLossRate {0};

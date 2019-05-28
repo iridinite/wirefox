@@ -348,6 +348,15 @@ namespace wirefox {
          * \param[in]   additionalPing  Artificial delay, in milliseconds, applied to incoming packets before they appear in Receive().
          */
         virtual void                    SetNetworkSimulation(float packetLoss, unsigned additionalPing) = 0;
+
+        /**
+         * \brief 
+         */
+        virtual void                    RpcRegisterSlot(const std::string& identifier, RpcCallbackAsync_t handler) = 0;
+
+        virtual void                    RpcUnregisterSlot(const std::string& identifier) = 0;
+
+        virtual void                    RpcSignal(const std::string& identifier, PeerID recipient, const BinaryStream& params) = 0;
     };
 
 }
