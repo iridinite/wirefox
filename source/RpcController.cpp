@@ -19,10 +19,11 @@ namespace {
 
     constexpr size_t djb2hash(const char* str) {
         size_t hash = 5381;
-        int c = 0;
 
-        while ((c = *str++))
+        do {
+            int c = *str++;
             hash = ((hash << 5) + hash) + c; // hash * 33 + c
+        } while (*str != 0);
 
         return hash;
     }
