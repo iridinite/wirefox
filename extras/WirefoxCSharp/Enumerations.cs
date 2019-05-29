@@ -106,7 +106,7 @@ namespace Iridinite.Wirefox {
     public enum PacketCommand : byte {
         /// Indicates that a connection attempt was successful.
         ///     No payload.  Sender is newly connected peer.
-        NOTIFY_CONNECT_SUCCESS = 6,
+        NOTIFY_CONNECT_SUCCESS = 7,
         /// Indicates that a connection attempt has failed.
         ///     (1 byte) ConnectResult, detailed failure reason.
         NOTIFY_CONNECT_FAILED,
