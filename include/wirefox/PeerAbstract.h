@@ -10,10 +10,10 @@
 #include "Enumerations.h"
 #include "WirefoxTime.h"
 #include "Channel.h"
+#include "BinaryStream.h"
 
 namespace wirefox {
 
-    class BinaryStream;
     class Packet;
     class PeerStats;
 
@@ -350,13 +350,37 @@ namespace wirefox {
         virtual void                    SetNetworkSimulation(float packetLoss, unsigned additionalPing) = 0;
 
         /**
-         * \brief 
+         * \brief Registers a user function as an RPC (remote procedure call).
+         * 
+         * Any connected client can then call this RPC by signaling the same \p identifier. If you wish to
+         * perform further authentication, you can do so in the function body.
+         * 
+         * You can add as many RPCs to the same identifier as you like; they will all be called in the same
+         * order as they were registered.
+         * 
+         * \param[in]   identifier      A string that identifies the RPC. Recommended, but not required, to
+         *                              be the same as the function name.
+         * \param[in]   handler         The callback function that will be invoked if this RPC is signalled.
+         * 
+         * \sa RpcSignal()
          */
         virtual void                    RpcRegisterSlot(const std::string& identifier, RpcCallbackAsync_t handler) = 0;
 
+        /**
+         * \brief Removes all user functions associated with an RPC identifier.
+         * 
+         * \param[in]   identifier      A string that identifies the RPC.
+         */
         virtual void                    RpcUnregisterSlot(const std::string& identifier) = 0;
 
-        virtual void                    RpcSignal(const std::string& identifier, PeerID recipient, const BinaryStream& params) = 0;
+        /**
+         * \brief Asynchronously invokes an RPC on a remote peer.
+         * 
+         * \param[in]   identifier      The RPC identifier to signal.
+         * \param[in]   recipient       The PeerID identifying the remote peer who will receive this signal.
+         * \param[in]   params          Optional. Any custom data you wish to pass to the invoked function(s).
+         */
+        virtual void                    RpcSignal(const std::string& identifier, PeerID recipient, const BinaryStream& params = BinaryStream(0)) = 0;
     };
 
 }
