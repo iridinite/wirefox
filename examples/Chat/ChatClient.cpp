@@ -122,6 +122,7 @@ void ChatClient::Connect(const std::string& host, unsigned short port) {
 
 void ChatClient::HandleInput(const std::string& input) {
     if (strncmp(input.c_str(), "/connect ", 9) == 0) {
+        // -- Connect --
         if (input.size() < 10) {
             std::cout << "Usage: /connect <host>" << std::endl;
             return;
@@ -132,11 +133,12 @@ void ChatClient::HandleInput(const std::string& input) {
 
 #ifdef _DEBUG
     } else if (strcmp(input.c_str(), "/c") == 0) {
-        // connect localhost
+        // -- Connect debug shorthand --
         Connect("localhost", m_port);
 #endif
 
     } else if (strcmp(input.c_str(), "/dc") == 0 || strcmp(input.c_str(), "/disconnect") == 0) {
+        // -- Disconnect --
         if (!m_connected) {
             std::cout << "You're not connected to a server." << std::endl;
             return;
@@ -144,7 +146,19 @@ void ChatClient::HandleInput(const std::string& input) {
         std::cout << "Disconnecting..." << std::endl;
         m_peer->Disconnect(m_server);
 
+    } else if (strncmp(input.c_str(), "/rpc ", 5) == 0) {
+        // -- RPC invocation --
+        if (input.size() < 6) {
+            std::cout << "Usage: /rpc <text>" << std::endl;
+            return;
+        }
+
+        wirefox::BinaryStream outstream;
+        outstream.WriteString(input.substr(5));
+        m_peer->RpcSignal("ExampleRPC", m_server, outstream);
+
     } else {
+        // -- General chat message --
         assert(input.size() > 0);
 
         // treat as text message, pack it into a packet and send to server

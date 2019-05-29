@@ -4,6 +4,7 @@ ChatServer::ChatServer(unsigned short port)
     : m_rng(time(nullptr)) {
     constexpr size_t maxClients = 32;
 
+    // set up the server peer
     m_peer = wirefox::IPeer::Factory::Create(maxClients);
     m_peer->SetMaximumIncomingPeers(maxClients);
     m_peer->SetNetworkSimulation(0.1f, 5);
@@ -14,6 +15,11 @@ ChatServer::ChatServer(unsigned short port)
         exit(1);
     }
 
+    // register an example RPC callback
+    using namespace std::placeholders;
+    m_peer->RpcRegisterSlot("ExampleRPC", std::bind(&ChatServer::ExampleRPC, this, _1, _2, _3));
+
+    // register an ordered chat channel
     m_channelChat = m_peer->MakeChannel(wirefox::ChannelMode::ORDERED);
 }
 
@@ -126,6 +132,12 @@ void ChatServer::SendToSpecific(wirefox::PeerID id, const std::string& message) 
 
     wirefox::Packet packet(static_cast<wirefox::PacketCommand>(ChatPacketCommand::MESSAGE), std::move(outstream));
     m_peer->Send(packet, id, wirefox::PacketOptions::RELIABLE, wirefox::PacketPriority::MEDIUM, m_channelChat);
+}
+
+void ChatServer::ExampleRPC(wirefox::IPeer&, wirefox::PeerID sender, wirefox::BinaryStream& instream) {
+    // this is an example RPC callback, fired from RpcSignal sent by the client
+    auto userString = instream.ReadString();
+    SendToSpecific(sender, "[RPC] This is an RPC. Your input was: " + userString);
 }
 
 ChatServer::ChatUser* ChatServer::GetUserByPeerID(wirefox::PeerID id) {

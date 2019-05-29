@@ -61,6 +61,7 @@ int main(int argc, const char** argv) {
         std::cout << "/exit              -  quit the chat client" << std::endl;
         std::cout << "/list              -  if connected, list other connected users" << std::endl;
         std::cout << "/nick <name>       -  if connected, change your nickname" << std::endl;
+        std::cout << "/rpc <text>        -  if connected, invoke example RPC with given message" << std::endl;
         std::cout << "/dc                -  if connected, disconnect from the server" << std::endl;
         std::cout << std::endl;
 

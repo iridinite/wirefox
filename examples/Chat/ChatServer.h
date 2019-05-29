@@ -20,6 +20,8 @@ private:
     void        Broadcast(const std::string& message) const;
     void        SendToSpecific(wirefox::PeerID id, const std::string& message) const;
 
+    void        ExampleRPC(wirefox::IPeer& peer, wirefox::PeerID sender, wirefox::BinaryStream& instream);
+
     ChatUser*   GetUserByPeerID(wirefox::PeerID id);
 
     std::unique_ptr<wirefox::IPeer> m_peer;
