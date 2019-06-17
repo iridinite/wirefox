@@ -17,7 +17,8 @@ ChatServer::ChatServer(unsigned short port)
 
     // register an example RPC callback
     using namespace std::placeholders;
-    m_peer->RpcRegisterSlot("ExampleRPC", std::bind(&ChatServer::ExampleRPC, this, _1, _2, _3));
+    m_peer->RpcRegisterAsync("ExampleRPC", std::bind(&ChatServer::ExampleRPC, this, _1, _2, _3));
+    m_peer->RpcRegisterBlocking("ExampleBlockingRPC", std::bind(&ChatServer::ExampleBlockingRPC, this, _1, _2, _3, _4));
 
     // register an ordered chat channel
     m_channelChat = m_peer->MakeChannel(wirefox::ChannelMode::ORDERED);
@@ -138,6 +139,14 @@ void ChatServer::ExampleRPC(wirefox::IPeer&, wirefox::PeerID sender, wirefox::Bi
     // this is an example RPC callback, fired from RpcSignal sent by the client
     auto userString = instream.ReadString();
     SendToSpecific(sender, "[RPC] This is an RPC. Your input was: " + userString);
+}
+
+void ChatServer::ExampleBlockingRPC(wirefox::IPeer&, wirefox::PeerID sender, wirefox::BinaryStream&, wirefox::BinaryStream& response) {
+    SendToSpecific(sender, "[RPC] Blocking RPC was invoked by peer " + std::to_string(sender));
+
+    // some very intense work being done
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    response.WriteInt64(m_rng());
 }
 
 ChatServer::ChatUser* ChatServer::GetUserByPeerID(wirefox::PeerID id) {

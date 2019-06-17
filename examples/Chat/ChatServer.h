@@ -21,6 +21,7 @@ private:
     void        SendToSpecific(wirefox::PeerID id, const std::string& message) const;
 
     void        ExampleRPC(wirefox::IPeer& peer, wirefox::PeerID sender, wirefox::BinaryStream& instream);
+    void        ExampleBlockingRPC(wirefox::IPeer& peer, wirefox::PeerID sender, wirefox::BinaryStream& instream, wirefox::BinaryStream& response);
 
     ChatUser*   GetUserByPeerID(wirefox::PeerID id);
 

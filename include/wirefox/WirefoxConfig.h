@@ -206,13 +206,23 @@ namespace wirefox {
     }
 
     /**
-     * \brief A callback function that can receive an async RPC signal.
+     * \brief A callback function that can receive an asynchronous RPC signal.
      * 
      * \param[in]   peer        Reference to the IPeer where this RPC was registered.
      * \param[in]   sender      The PeerID of the remote peer who signaled this RPC.
      * \param[in]   instream    Any payload data the sender optionally included.
      */
     using RpcCallbackAsync_t = std::function<void(class IPeer& peer, PeerID sender, class BinaryStream& instream)>;
+
+    /**
+     * \brief A callback function that can receive a synchronous RPC signal.
+     *
+     * \param[in]   peer        Reference to the IPeer where this RPC was registered.
+     * \param[in]   sender      The PeerID of the remote peer who signaled this RPC.
+     * \param[in]   instream    Any payload data the sender optionally included.
+     * \param[out]  outstream   Any payload data to be sent back to the sender.
+     */
+    using RpcCallbackBlocking_t = std::function<void(class IPeer& peer, PeerID sender, class BinaryStream& instream, class BinaryStream& outstream)>;
 
     namespace detail {
         /// Represents a remote socket address.

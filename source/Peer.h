@@ -133,12 +133,11 @@ namespace wirefox {
 
             void                        SetNetworkSimulation(float packetLoss, unsigned additionalPing) override;
 
-
-            void                        RpcRegisterSlot(const std::string& identifier, RpcCallbackAsync_t handler) override;
-
+            void                        RpcRegisterAsync(const std::string& identifier, RpcCallbackAsync_t handler) override;
+            void                        RpcRegisterBlocking(const std::string& identifier, RpcCallbackBlocking_t handler) override;
             void                        RpcUnregisterSlot(const std::string& identifier) override;
-
             void                        RpcSignal(const std::string& identifier, PeerID recipient, const BinaryStream& params) override;
+            bool                        RpcSignalBlocking(const std::string& identifier, PeerID recipient, BinaryStream& response, const BinaryStream& params = BinaryStream(0)) override;
 
 #if WIREFOX_ENABLE_NETWORK_SIM
             /**
@@ -213,6 +212,7 @@ namespace wirefox {
             size_t m_remotesMax;
             size_t m_remotesIncoming;
             BinaryStream m_advertisement;
+
             RpcController m_rpc;
 
 #if WIREFOX_ENABLE_NETWORK_SIM

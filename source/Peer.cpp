@@ -393,6 +393,9 @@ void Peer::OnNewIncomingPeer(const RemoteAddress& addr, const Packet& packet) {
 }
 
 void Peer::OnDisconnect(RemotePeer& remote, PacketCommand cmd) {
+    // make sure to unblock all RPCs that were waiting on this
+    m_rpc.SignalAllBlockingReplies(remote.id);
+
     // remove from lookup tables
     m_remoteLookup.erase(remote.id);
 
@@ -420,18 +423,37 @@ void Peer::OnSystemPacket(RemotePeer& remote, std::unique_ptr<Packet> packet) {
         // get the RPC identifier and its payload back out of the packet
         auto instream = packet->GetStream();
         auto ident = instream.ReadString();
+        auto blocking = instream.ReadBool();
 
         auto paramslen = instream.Read7BitEncodedInt();
         BinaryStream params(paramslen);
-        if (paramslen > 0) {
-            // TODO: this is same paradigm used in EncryptionLayerSodium, maybe replace with dedicated function?
-            params.WriteZeroes(paramslen);
-            instream.ReadBytes(params.GetWritableBuffer(), paramslen);
+        if (paramslen > 0)
+            instream.ReadBytesIntoStream(params, paramslen);
+
+        if (blocking) {
+            // run the synchronous RPC and record the response
+            BinaryStream outstream;
+            outstream.WriteString(ident);
+            m_rpc.SignalBlocking(ident, *this, packet->GetSender(), params, outstream);
+
+            // enqueue response notification
+            Packet rpcReply(PacketCommand::RPC_BLOCKING_REPLY, std::move(outstream));
+            Send(rpcReply, packet->GetSender(), PacketOptions::RELIABLE, PacketPriority::MEDIUM, Channel());
+
+        } else {
+            // invoke the RPC as a fire-and-forget
+            m_rpc.Signal(ident, *this, packet->GetSender(), params);
         }
 
-        // invoke the RPC
-        m_rpc.Signal(ident, *this, packet->GetSender(), params);
+        break;
+    }
+    case PacketCommand::RPC_BLOCKING_REPLY: {
+        // received response to blocking RPC, read identifier from packet
+        auto instream = packet->GetStream();
+        auto ident = instream.ReadString();
 
+        // unblock the waiting thread
+        m_rpc.SignalBlockingReply(ident, packet->GetSender(), instream);
         break;
     }
     default:
@@ -480,11 +502,11 @@ void Peer::OnUnconnectedMessage(const RemoteAddress& addr, BinaryStream& instrea
         // if handshake failed, discard this remote endpoint
         // edit: Handshaker::Complete() already calls remote->Reset() on failure
         //if (remote->handshake->IsDone() && remote->handshake->GetResult() != ConnectResult::OK)
-            //remote->Reset();
+        //remote->Reset();
 
         break;
     }
-    case PacketCommand::DISCONNECT_ACK: {   
+    case PacketCommand::DISCONNECT_ACK: {
         // disconnect completed on remote end, hence flag_link is unset on this packet
 
         RemotePeer* remote = GetRemoteByAddress(addr);
@@ -656,8 +678,12 @@ void Peer::SetNetworkSimulation(float packetLoss, unsigned additionalPing) {
 #endif
 }
 
-void Peer::RpcRegisterSlot(const std::string& identifier, RpcCallbackAsync_t handler) {
-    m_rpc.Slot(identifier, handler);
+void Peer::RpcRegisterAsync(const std::string& identifier, RpcCallbackAsync_t handler) {
+    m_rpc.SlotAsync(identifier, handler);
+}
+
+void Peer::RpcRegisterBlocking(const std::string& identifier, RpcCallbackBlocking_t handler) {
+    m_rpc.SlotBlocking(identifier, handler);
 }
 
 void Peer::RpcUnregisterSlot(const std::string& identifier) {
@@ -668,12 +694,29 @@ void Peer::RpcSignal(const std::string& identifier, PeerID recipient, const Bina
     // merge identifier and params into a buffer
     BinaryStream data(params.GetLength() + identifier.length() + 2 * sizeof(size_t));
     data.WriteString(identifier);
+    data.WriteBool(false); // blocking flag
     data.Write7BitEncodedInt(static_cast<int>(params.GetLength()));
     data.WriteBytes(params);
 
     // enqueue notification to remote peer
     Packet rpc(PacketCommand::RPC_SIGNAL, std::move(data));
     Send(rpc, recipient, PacketOptions::RELIABLE, PacketPriority::MEDIUM, Channel());
+}
+
+bool Peer::RpcSignalBlocking(const std::string& identifier, PeerID recipient, BinaryStream& response, const BinaryStream& params) {
+    // merge identifier and params into a buffer
+    BinaryStream data(params.GetLength() + identifier.length() + 2 * sizeof(size_t));
+    data.WriteString(identifier);
+    data.WriteBool(true); // blocking flag
+    data.Write7BitEncodedInt(static_cast<int>(params.GetLength()));
+    data.WriteBytes(params);
+
+    // enqueue notification to remote peer
+    Packet rpc(PacketCommand::RPC_SIGNAL, std::move(data));
+    Send(rpc, recipient, PacketOptions::RELIABLE, PacketPriority::CRITICAL, Channel());
+
+    // wait for response
+    return m_rpc.AwaitBlockingReply(identifier, recipient, response);
 }
 
 #if WIREFOX_ENABLE_NETWORK_SIM

@@ -157,6 +157,17 @@ void ChatClient::HandleInput(const std::string& input) {
         outstream.WriteString(input.substr(5));
         m_peer->RpcSignal("ExampleRPC", m_server, outstream);
 
+    } else if (strcmp(input.c_str(), "/rpb") == 0) {
+        std::cout << "Calling blocking RPC..." << std::endl;
+
+        wirefox::BinaryStream params(0); // dummy
+        wirefox::BinaryStream response;
+        if (m_peer->RpcSignalBlocking("ExampleBlockingRPC", m_server, params, response)) {
+            std::cout << "Received RPC response: " << response.ReadInt64() << std::endl;
+        } else {
+            std::cout << "RPC failed. Maybe we disconnected?" << std::endl;
+        }
+
     } else {
         // -- General chat message --
         assert(input.size() > 0);

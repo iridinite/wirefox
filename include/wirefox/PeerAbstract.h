@@ -149,6 +149,11 @@ namespace wirefox {
         virtual void                    SendLoopback(const Packet& packet) = 0;
 
         /**
+         * \copydoc SendLoopback
+         */
+        virtual void                    SendLoopback(std::unique_ptr<Packet> packet) = 0;
+
+        /**
          * \brief Retrieves the next incoming Packet from the inbox.
          * 
          * This function will return the next incoming Packet in the queue. It is advised to call this function
@@ -350,7 +355,7 @@ namespace wirefox {
         virtual void                    SetNetworkSimulation(float packetLoss, unsigned additionalPing) = 0;
 
         /**
-         * \brief Registers a user function as an RPC (remote procedure call).
+         * \brief Registers a user function as an asynchronous RPC (remote procedure call).
          * 
          * Any connected client can then call this RPC by signaling the same \p identifier. If you wish to
          * perform further authentication, you can do so in the function body.
@@ -364,7 +369,24 @@ namespace wirefox {
          * 
          * \sa RpcSignal()
          */
-        virtual void                    RpcRegisterSlot(const std::string& identifier, RpcCallbackAsync_t handler) = 0;
+        virtual void                    RpcRegisterAsync(const std::string& identifier, RpcCallbackAsync_t handler) = 0;
+
+        /**
+         * \brief Registers a user function as a blocking RPC (remote procedure call).
+         * 
+         * Any connected client can then call this RPC by signaling the same \p identifier. If you wish to
+         * perform further authentication, you can do so in the function body. Generally, the remote calling
+         * thread will be blocked until this peer responds, thus making the calls essentially synchronous.
+         * 
+         * The identifier is unique. You can only register one handler to one identifier, unlike async RPCs.
+         * 
+         * \param[in]   identifier      A string that identifies the RPC. Recommended, but not required, to
+         *                              be the same as the function name.
+         * \param[in]   handler         The callback function that will be invoked if this RPC is signalled.
+         * 
+         * \sa RpcSignal()
+         */
+        virtual void                    RpcRegisterBlocking(const std::string& identifier, RpcCallbackBlocking_t handler) = 0;
 
         /**
          * \brief Removes all user functions associated with an RPC identifier.
@@ -381,6 +403,21 @@ namespace wirefox {
          * \param[in]   params          Optional. Any custom data you wish to pass to the invoked function(s).
          */
         virtual void                    RpcSignal(const std::string& identifier, PeerID recipient, const BinaryStream& params = BinaryStream(0)) = 0;
+
+        /**
+         * \brief Synchronously invokes an RPC on a remote peer.
+         * 
+         * The calling thread blocks until the remote endpoint replies or disconnects.
+         * 
+         * \param[in]   identifier      The RPC identifier to signal.
+         * \param[in]   recipient       The PeerID identifying the remote peer who will receive this signal.
+         * \param[in]   response        An output stream to contain any data the remote function passed on.
+         * \param[in]   params          Optional. Any custom data you wish to pass to the invoked function(s).
+         * 
+         * \returns     A boolean indicating success. If true, the RPC was invoked and \p response may contain data.
+         *              If false, the remote peer disconnected or some kind of error occurred.
+         */
+        virtual bool                    RpcSignalBlocking(const std::string& identifier, PeerID recipient, BinaryStream& response, const BinaryStream& params = BinaryStream(0)) = 0;
     };
 
 }

@@ -130,6 +130,8 @@ namespace wirefox {
         ADVERTISEMENT,
         /// \internal Async RPC invocation.
         RPC_SIGNAL,
+        /// \internal Synchronous RPC response (has output stream).
+        RPC_BLOCKING_REPLY,
 
         // ----- USER - These may be returned through Peer::Receive() ----- //
 
