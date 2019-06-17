@@ -115,6 +115,11 @@ namespace wirefox {
             void            EnqueueLoopback(const Packet& packet);
 
             /**
+             * \copydoc EnqueueLoopback
+             */
+            void            EnqueueLoopback(std::unique_ptr<Packet> packet);
+
+            /**
              * \brief Read an incoming message.
              *
              * Removes the next incoming packet from the inbound queue and returns it. If no packet is currently available,

@@ -153,6 +153,11 @@ void PacketQueue::EnqueueLoopback(const Packet& packet) {
     m_inbox.push(Packet::Factory::Create(packet));
 }
 
+void PacketQueue::EnqueueLoopback(std::unique_ptr<Packet> packet) {
+    WIREFOX_LOCK_GUARD(m_lockInbox);
+    m_inbox.push(std::move(packet));
+}
+
 std::unique_ptr<Packet> PacketQueue::DequeueIncoming() {
     WIREFOX_LOCK_GUARD(m_lockInbox);
 

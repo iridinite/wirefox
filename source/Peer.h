@@ -63,6 +63,7 @@ namespace wirefox {
 
             PacketID                    Send(const Packet& packet, PeerID recipient, PacketOptions options, PacketPriority priority, const Channel& channel) override;
             void                        SendLoopback(const Packet& packet) override;
+            void                        SendLoopback(std::unique_ptr<Packet> packet) override;
             std::unique_ptr<Packet>     Receive() override;
 
             void                        SetOfflineAdvertisement(const BinaryStream& data) override;

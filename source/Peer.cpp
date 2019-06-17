@@ -204,6 +204,10 @@ void Peer::SendLoopback(const Packet& packet) {
     m_queue->EnqueueLoopback(packet);
 }
 
+void Peer::SendLoopback(std::unique_ptr<Packet> packet) {
+    m_queue->EnqueueLoopback(std::move(packet));
+}
+
 void Peer::Ping(const std::string& hostname, uint16_t port) const {
     RemoteAddress addr;
     if (!m_masterSocket->Resolve(hostname, port, addr)) return;
