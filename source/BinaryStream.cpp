@@ -326,6 +326,12 @@ void BinaryStream::ReadBytes(uint8_t* buffer, size_t count) {
     m_position += count;
 }
 
+void BinaryStream::ReadBytesIntoStream(BinaryStream& dest, size_t count) {
+    auto offset = dest.GetPosition();
+    dest.WriteZeroes(count);
+    ReadBytes(dest.GetWritableBuffer() + offset, count);
+}
+
 uint16_t BinaryStream::ReadUInt16() {
     // read 2 bytes from buffer, and endian swap
     uint16_t ret;

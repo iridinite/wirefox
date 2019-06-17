@@ -267,7 +267,7 @@ namespace wirefox {
         uint8_t         ReadByte();
 
         /**
-         * \brief Reads an array of bytes from the stream.
+         * \brief Reads an array of bytes from the stream and copies them into a buffer.
          * 
          * You are responsible for ensuring that \p buffer is large enough to hold \p count bytes.
          * 
@@ -275,6 +275,14 @@ namespace wirefox {
          * \param[in]   count   The number of bytes to read from the stream
          */
         void            ReadBytes(uint8_t* buffer, size_t count);
+
+        /**
+         * \brief Reads an array of bytes from the stream and writes them to another BinaryStream.
+         *
+         * \param[in]   dest    The destination BinaryStream the read bytes will be written to
+         * \param[in]   count   The number of bytes to read from the stream
+         */
+        void            ReadBytesIntoStream(BinaryStream& dest, size_t count);
 
         /// Reads a 16-bit signed integer from the stream.
         int16_t         ReadInt16() { return static_cast<int16_t>(ReadUInt16()); }
